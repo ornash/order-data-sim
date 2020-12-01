@@ -1,8 +1,8 @@
-package com.css.model
+package com.css.simulator.model
 
 import java.time.{Duration, LocalDateTime}
 
-import com.css.exception.SimulatorException
+import com.css.simulator.exception.SimulatorException
 
 import scala.util.Random
 
@@ -16,7 +16,7 @@ case class Courier(orderId: Option[String] = None,
     currentStatus.statusType == ARRIVED
   }
 
-  def isMatcheed() : Boolean = {
+  def isMatched() : Boolean = {
     currentStatus.statusType == MATCHED
   }
 
@@ -36,18 +36,30 @@ case class Courier(orderId: Option[String] = None,
     }
   }
 
+  def dispatchDuration(): Duration = {
+    if (isArrived() || isMatched() || hasDelivered()) {
+      val dispatchedStatus = previousStatuses.find(DISPATCHED == _.statusType)
+      if (dispatchedStatus.isEmpty) {
+        throw SimulatorException(s"Cannot calculate dispatch duration of Courier $this, it didn't enter dispatched state.")
+      }
+
+      dispatchedStatus.get.durationInStatus.get
+    } else {
+      throw SimulatorException(s"Cannot calculate dispatch duration of Courier $this, it hasn't arrived, matched or delivered.")
+    }
+  }
+
   def waitDuration(): Duration = {
-    val currentStatusType = currentStatus.statusType
-    if(currentStatusType != MATCHED && currentStatusType != HAS_DELIVERED) {
+    if (isMatched() || hasDelivered()) {
+      val arrivedStatus = previousStatuses.find(ARRIVED == _.statusType)
+      if (arrivedStatus.isEmpty) {
+        throw SimulatorException(s"Cannot calculate wait duration of Courier $this, it didn't enter arrived state.")
+      }
+
+      arrivedStatus.get.durationInStatus.get
+    } else {
       throw SimulatorException(s"Cannot calculate wait duration of Courier $this, it hasn't been matched or delivered.")
     }
-
-    val arrivedStatus = previousStatuses.find(ARRIVED == _.statusType)
-    if(arrivedStatus.isEmpty) {
-      throw SimulatorException(s"Cannot calculate wait duration of Courier $this, it didn't enter arrived state.")
-    }
-
-    arrivedStatus.get.durationInStatus
   }
 }
 
@@ -55,6 +67,7 @@ object Courier {
   //FIXME
   val LAST_COURIER = Courier.dispatchNewCourier(Option("last"), "last")
 
+  //FIXME: should orderId be Option?
   def dispatchNewCourier(orderId: Option[String] = None,
                          courierId: String = "",
                          arrivalDelayDuration: Duration = Duration.ofSeconds(Random.between(3, 16))): Courier = {

@@ -1,6 +1,6 @@
-package com.css.reader
+package com.css.simulator.reader
 
-import com.css.exception.SimulatorException
+import com.css.simulator.exception.SimulatorException
 import org.scalatest.funsuite.AnyFunSuite
 
 class OrderNotificationReaderTestSuite extends AnyFunSuite {

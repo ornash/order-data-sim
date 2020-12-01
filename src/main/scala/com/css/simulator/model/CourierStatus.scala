@@ -1,6 +1,4 @@
-package com.css.model
-
-import com.css.exception.SimulatorException
+package com.css.simulator.model
 
 import java.time.{Duration, LocalDateTime}
 
@@ -14,11 +12,15 @@ case class CourierStatus(statusType: CourierStatusType,
                          startTime: LocalDateTime = LocalDateTime.now(),
                          endTime: Option[LocalDateTime] = None) {
 
-  def durationInStatus: Duration = {
-    if(endTime.isEmpty) {
-      throw SimulatorException(s"End time is unavailable, cannot calculate time spent in state: $statusType")
+  def durationInStatus: Option[Duration] = {
+    if(endTime.isDefined) {
+      Some(Duration.between(startTime, endTime.get))
+    } else {
+      None
     }
+  }
 
-    Duration.between(startTime, endTime.get)
+  override def toString: String = {
+    s"CourierStatus($statusType at $startTime and took $durationInStatus)"
   }
 }

@@ -1,7 +1,7 @@
-package com.css.reader
+package com.css.simulator.reader
 
-import com.css.exception.SimulatorException
-import com.css.model.OrderNotification
+import com.css.simulator.exception.SimulatorException
+import com.css.simulator.model.OrderNotification
 import com.typesafe.scalalogging.LazyLogging
 import upickle.default._
 

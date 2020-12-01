@@ -1,4 +1,4 @@
-package com.css.model
+package com.css.simulator.model
 
 import upickle.default._
 import org.scalatest.funsuite.AnyFunSuite
