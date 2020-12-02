@@ -4,101 +4,64 @@ import java.time.{Duration, LocalDateTime}
 
 import com.css.simulator.exception.SimulatorException
 
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
 case class Courier(orderId: Option[String] = None,
                    courierId: String = "",
                    arrivalDelayDuration: Duration,
-                   currentStatus: CourierStatus,
-                   previousStatuses: Seq[CourierStatus] = Seq.empty) {
+                   currentStatus: CourierStatus) {
 
-  def isArrived() : Boolean = {
-    currentStatus.statusType == ARRIVED
-  }
-
-  def isMatched() : Boolean = {
-    currentStatus.statusType == MATCHED
-  }
-
-  def hasDelivered() : Boolean = {
-    currentStatus.statusType == HAS_DELIVERED
-  }
-
-  def arrivalTime(): LocalDateTime = {
-    if(isArrived()) {
-      currentStatus.startTime
-    } else {
-      val arrivedStatus = previousStatuses.find(ARRIVED == _.statusType)
-      if(arrivedStatus.isEmpty) {
-        throw SimulatorException(s"Cannot calculate arrival time of Courier $this, it hasn't arrived.")
-      }
-      arrivedStatus.get.startTime
+  def transform(newStatusType: CourierStatusType): Try[Courier] = Try {
+    currentStatus.transform(newStatusType) match {
+      case Success(newStatus) => this.copy(currentStatus = newStatus)
+      case Failure(exception) => throw SimulatorException(s"Cannot transform Courier to $newStatusType", exception)
     }
   }
 
-  def dispatchDuration(): Duration = {
-    if (isArrived() || isMatched() || hasDelivered()) {
-      val dispatchedStatus = previousStatuses.find(DISPATCHED == _.statusType)
-      if (dispatchedStatus.isEmpty) {
-        throw SimulatorException(s"Cannot calculate dispatch duration of Courier $this, it didn't enter dispatched state.")
-      }
-
-      dispatchedStatus.get.durationInStatus.get
-    } else {
-      throw SimulatorException(s"Cannot calculate dispatch duration of Courier $this, it hasn't arrived, matched or delivered.")
+  def arrivalTime(): Option[LocalDateTime] = {
+    currentStatus.findCourierStatus(ARRIVED) match {
+      case Some(arrivedCourierStatus) => Some(arrivedCourierStatus.startTime)
+      case None => None
     }
   }
 
-  def waitDuration(): Duration = {
-    if (isMatched() || hasDelivered()) {
-      val arrivedStatus = previousStatuses.find(ARRIVED == _.statusType)
-      if (arrivedStatus.isEmpty) {
-        throw SimulatorException(s"Cannot calculate wait duration of Courier $this, it didn't enter arrived state.")
-      }
+  def dispatchDuration(): Option[Duration] = {
+    durationInStatus(DISPATCHED)
+  }
 
-      arrivedStatus.get.durationInStatus.get
-    } else {
-      throw SimulatorException(s"Cannot calculate wait duration of Courier $this, it hasn't been matched or delivered.")
+  def waitDuration(): Option[Duration] = {
+    durationInStatus(ARRIVED)
+  }
+
+  private def durationInStatus(expectedStatusType: CourierStatusType): Option[Duration] = {
+    currentStatus.findCourierStatus(expectedStatusType) match {
+      case Some(expectedCourierStatus) => expectedCourierStatus.durationInStatus
+      case None => None
     }
   }
 }
 
 object Courier {
-  //FIXME
-  val LAST_COURIER = Courier.dispatchNewCourier(Option("last"), "last")
+  val DUMMY_COURIER = Courier.dispatchNewCourier(Option("dummy"), "dummy")
 
   //FIXME: should orderId be Option?
+  //FIXME: should duration be Random and should Random range be configurable
   def dispatchNewCourier(orderId: Option[String] = None,
                          courierId: String = "",
                          arrivalDelayDuration: Duration = Duration.ofSeconds(Random.between(3, 16))): Courier = {
     Courier(orderId, courierId, arrivalDelayDuration, CourierStatus(DISPATCHED))
   }
 
-  def arrived(dispatchedCourier: Courier): Courier = {
-    changeCourierStatus(dispatchedCourier, DISPATCHED, ARRIVED)
+  def arrived(dispatchedCourier: Courier):  Try[Courier] = {
+    dispatchedCourier.transform(ARRIVED)
   }
 
-  def matched(arrivedCourier: Courier): Courier = {
-    changeCourierStatus(arrivedCourier, ARRIVED, MATCHED)
+  def matched(arrivedCourier: Courier):  Try[Courier] = {
+    arrivedCourier.transform(MATCHED)
   }
 
-  def deliver(matchedCourier: Courier): Courier = {
-    changeCourierStatus(matchedCourier, MATCHED, HAS_DELIVERED)
-  }
-
-  private def changeCourierStatus(existingCourier: Courier,
-                                  expectedCurrentStatusType: CourierStatusType,
-                                  newStatusType: CourierStatusType): Courier = {
-    val currentStatus = existingCourier.currentStatus
-    if(currentStatus.statusType != expectedCurrentStatusType) {
-      throw SimulatorException(s"Cannot change Courier status for $existingCourier, Courier is not : $expectedCurrentStatusType")
-    }
-
-    val endCurrentStatus = currentStatus.copy(endTime = Some(LocalDateTime.now()))
-    val updatedPreviousStatuses = endCurrentStatus +: existingCourier.previousStatuses
-
-    val newCourierStatus = CourierStatus(newStatusType)
-    existingCourier.copy(currentStatus = newCourierStatus, previousStatuses = updatedPreviousStatuses)
+  def deliver(matchedCourier: Courier): Try[Courier] = {
+    matchedCourier.transform(HAS_DELIVERED)
   }
 }
 

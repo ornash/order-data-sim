@@ -12,7 +12,7 @@ case class FifoMatchStrategy() extends MatchStrategy with LazyLogging {
   implicit def dateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
 
   val cookedOrders = mutable.ArrayBuffer.empty[Order]
-  val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalTime())(dateTimeOrdering))
+  val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalTime().get)(dateTimeOrdering))
 
   override def processBatch(ordersBatch: Seq[Order], couriersBatch: Seq[Courier]): Unit = {
     ordersBatch.foreach(cookedOrder => {
@@ -29,11 +29,19 @@ case class FifoMatchStrategy() extends MatchStrategy with LazyLogging {
       Try(arrivedCouriers.dequeue()) match {
         case Success(arrivedCourier) => {
           //FIXME which order did this match with
-          matchedCouriers.addOne(Courier.matched(arrivedCourier))
-          matchedOrders.addOne(Order.pickup(cookedOrder))
+          Courier.matched(arrivedCourier) match {
+            case Failure(exception) => throw exception
+            case Success(matchedCourier) => matchedCouriers.addOne(matchedCourier)
+          }
+
+          Order.pickup(cookedOrder) match {
+            case Failure(exception) => throw exception
+            case Success(matchedOrder) => matchedOrders.addOne(matchedOrder)
+          }
+
           cookedOrdersToBeRemoved.addOne(cookedOrder)
         }
-        case Failure(exception) => {}
+        case Failure(exception) => throw exception
       }
     })
 

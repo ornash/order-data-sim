@@ -89,8 +89,8 @@ object DispatchSimulator extends App with LazyLogging {
     Await.result(Future.sequence(allOrders), Duration.Inf)
     Await.result(Future.sequence(allCouriers), Duration.Inf)
 
-    orderQueue.put(Order.LAST_ORDER)
-    courierQueue.put(Courier.LAST_COURIER)
+    orderQueue.put(Order.DUMMY_ORDER)
+    courierQueue.put(Courier.DUMMY_COURIER)
 
 //    processor.onComplete {
 //      case Success(_) => logger.info(s"Processor completed.")

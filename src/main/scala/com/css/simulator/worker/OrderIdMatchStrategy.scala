@@ -4,6 +4,7 @@ import com.css.simulator.model.{Courier, Order}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
+import scala.util.{Failure, Success}
 
 case class OrderIdMatchStrategy() extends MatchStrategy with LazyLogging {
 
@@ -14,8 +15,15 @@ case class OrderIdMatchStrategy() extends MatchStrategy with LazyLogging {
     ordersBatch.foreach(cookedOrder => {
       val waitingCourier = arrivedCourierMap.remove(cookedOrder.id)
       if (waitingCourier.isDefined) {
-        matchedCouriers.addOne(Courier.matched(waitingCourier.get))
-        matchedOrders.addOne(Order.pickup(cookedOrder))
+        Courier.matched(waitingCourier.get) match {
+          case Failure(exception) => throw exception
+          case Success(matchedCourier) => matchedCouriers.addOne(matchedCourier)
+        }
+
+        Order.pickup(cookedOrder) match {
+          case Failure(exception) => throw exception
+          case Success(matchedOrder) => matchedOrders.addOne(matchedOrder)
+        }
       } else {
         cookedOrderMap.put(cookedOrder.id, cookedOrder)
       }
@@ -24,8 +32,15 @@ case class OrderIdMatchStrategy() extends MatchStrategy with LazyLogging {
     couriersBatch.foreach(arrivedCourier => {
       val cookedOrder = cookedOrderMap.remove(arrivedCourier.orderId.get)
       if (cookedOrder.isDefined) {
-        matchedOrders.addOne(Order.pickup(cookedOrder.get))
-        matchedCouriers.addOne(Courier.matched(arrivedCourier))
+        Courier.matched(arrivedCourier) match {
+          case Failure(exception) => throw exception
+          case Success(matchedCourier) => matchedCouriers.addOne(matchedCourier)
+        }
+
+        Order.pickup(cookedOrder.get) match {
+          case Failure(exception) => throw exception
+          case Success(matchedOrder) => matchedOrders.addOne(matchedOrder)
+        }
       } else {
         arrivedCourierMap.put(arrivedCourier.orderId.get, arrivedCourier)
       }
