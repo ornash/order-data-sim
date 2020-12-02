@@ -5,7 +5,7 @@ import java.time.{Duration, LocalDateTime}
 import com.css.simulator.exception.SimulatorException
 
 //FIXME - allow only linear transitions, no cyclic transitions
-//FIXME - Transitions from one state to another should happen instantaneously within this class, dont allow delays
+//FIXME - Transitions from one state to another should happen instantaneously within this class, dont allow delays. -handled
 //FIXME - dont throw exceptions, use Try/Success/Failure or Option
 case class Order(id: String,
                  name: String = "",
@@ -77,14 +77,12 @@ object Order {
   //FIXME
   val LAST_ORDER = Order.newOrder("last", "last", 0)
 
-  def newOrder(id: String,
-               name: String = "",
-               prepTime: Int): Order = {
+  def newOrder(id: String, name: String = "", prepTime: Int): Order = {
     Order(id, name, Duration.ofSeconds(prepTime), OrderStatus(RECEIVED))
   }
 
   def fromOrderNotification(orderNotification: OrderNotification): Order = {
-    Order(orderNotification.id, orderNotification.name, Duration.ofSeconds(orderNotification.prepTime), OrderStatus(RECEIVED))
+    newOrder(orderNotification.id, orderNotification.name, orderNotification.prepTime)
   }
 
   def startCooking(receivedOrder: Order): Order = {

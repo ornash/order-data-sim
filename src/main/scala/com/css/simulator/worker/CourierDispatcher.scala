@@ -6,7 +6,6 @@ import com.css.simulator.model.{Courier, OrderNotification}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 case class CourierDispatcher(ec: ExecutionContext, courierQueue: LinkedBlockingDeque[Courier]) extends LazyLogging {
 

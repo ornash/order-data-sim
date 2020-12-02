@@ -25,7 +25,7 @@ case class Courier(orderId: Option[String] = None,
   }
 
   def arrivalTime(): LocalDateTime = {
-    if(currentStatus.statusType == ARRIVED) {
+    if(isArrived()) {
       currentStatus.startTime
     } else {
       val arrivedStatus = previousStatuses.find(ARRIVED == _.statusType)

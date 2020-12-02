@@ -8,7 +8,6 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-
 case class FifoMatchStrategy() extends MatchStrategy with LazyLogging {
   implicit def dateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
 

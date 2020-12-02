@@ -6,7 +6,6 @@ import com.css.simulator.model.{Order, OrderNotification}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 case class CloudKitchen(ec: ExecutionContext, orderQueue: LinkedBlockingDeque[Order]) extends LazyLogging {
 
