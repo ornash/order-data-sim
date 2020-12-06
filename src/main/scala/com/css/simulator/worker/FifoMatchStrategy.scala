@@ -41,7 +41,7 @@ case class FifoMatchStrategy() extends MatchStrategy with LazyLogging {
 
           cookedOrdersToBeRemoved.addOne(cookedOrder)
         }
-        case Failure(exception) => throw exception
+        case Failure(exception) => { } //ignore because dequeue can fail when there are no items
       }
     })
 

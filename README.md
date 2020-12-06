@@ -1,5 +1,10 @@
 to do project
 	-should I used separate thread pools for waiting and arrivals?
+	-should I used separate thread pools for order workers and courier workers
+	-tests
+	-readme
+	-try out other options
+	-allow option to create infinite threads
 
 Things Learnt
 	- thread.sleep doesnt release executor thread for others to use, CPU cannot be used during sleep. can you fix this?

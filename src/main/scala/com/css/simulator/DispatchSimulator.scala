@@ -111,14 +111,14 @@ object DispatchSimulator extends App with LazyLogging {
     logger.info(s"Sizes: receivedOrders=${allOrders.size}, matchedOrders=${matchStrategy.getMatchedOrders.size}")
     logger.info(s"Sizes: receivedCouriers=${allCouriers.size}, matchedCouriers=${matchStrategy.getMatchedCouriers.size}")
 
-    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.receivedDuration()))
+    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.receivedDuration().get))
     printStats("Expected Order Prep", matchStrategy.getMatchedOrders.map(_.prepDuration))
-    printStats("Order Cooking", matchStrategy.getMatchedOrders.map(_.cookDuration()))
-    printStats("Order Wait", matchStrategy.getMatchedOrders.map(_.waitDuration()))
+    printStats("Order Cooking", matchStrategy.getMatchedOrders.map(_.cookDuration().get))
+    printStats("Order Wait", matchStrategy.getMatchedOrders.map(_.waitDuration().get))
 
     printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.arrivalDelayDuration))
-    printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration()))
-    printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration()))
+    printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration().get))
+    printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration().get))
   }
 
   //TODO: write this to a csv for analysis
