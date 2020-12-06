@@ -25,7 +25,7 @@ case class Matcher(ec: ExecutionContext,
         orderQueue.drainTo(cookedOrdersList)
         isLastOrderCooked = cookedOrdersList.asScala.find(cookedOrder => cookedOrder == Order.DUMMY_ORDER).isDefined
         val cookedOrdersBatch = cookedOrdersList.asScala.filterNot(cookedOrder => cookedOrder == Order.DUMMY_ORDER).toSeq
-        matchStrategy.processBatch(cookedOrdersBatch, Seq.empty[Courier])
+        matchStrategy.matchCookedOrders(cookedOrdersBatch)
       }
 
       if(hasLastCourierArrived == false) {
@@ -36,9 +36,8 @@ case class Matcher(ec: ExecutionContext,
         hasLastCourierArrived = arrivedCouriersList.asScala.find(arrivedCourier => arrivedCourier == Courier.DUMMY_COURIER).isDefined
         val arrivedCouriersBatch = arrivedCouriersList.asScala.filterNot(arrivedCourier => arrivedCourier == Courier.DUMMY_COURIER).toSeq
 
-        matchStrategy.processBatch(Seq.empty[Order], arrivedCouriersBatch)
+        matchStrategy.matchArrivedCouriers(arrivedCouriersBatch)
       }
-      //Thread.sleep(500)
     }
   }
 }

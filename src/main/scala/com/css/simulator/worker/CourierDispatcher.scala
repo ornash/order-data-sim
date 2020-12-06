@@ -1,6 +1,6 @@
 package com.css.simulator.worker
 
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.LinkedBlockingQueue
 
 import com.css.simulator.exception.SimulatorException
 import com.css.simulator.model.{Courier, OrderNotification}
@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-case class CourierDispatcher(ec: ExecutionContext, courierQueue: LinkedBlockingDeque[Courier]) extends LazyLogging {
+case class CourierDispatcher(ec: ExecutionContext, courierQueue: LinkedBlockingQueue[Courier]) extends LazyLogging {
 
   def dispatchCourier(orderNotification: OrderNotification): Future[Courier] = {
     val dispatchedCourier = Courier.dispatchNewCourier(Option(orderNotification.id))
@@ -22,7 +22,7 @@ case class CourierDispatcher(ec: ExecutionContext, courierQueue: LinkedBlockingD
         case Success(arrivedCourier) => {
           //blocking operation
           courierQueue.put(arrivedCourier)
-          logger.info(s"Courier has arrived: $arrivedCourier")
+          //logger.info(s"Courier has arrived: $arrivedCourier")
           arrivedCourier
         }
       }

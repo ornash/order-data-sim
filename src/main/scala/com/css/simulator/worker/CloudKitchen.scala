@@ -1,6 +1,6 @@
 package com.css.simulator.worker
 
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.LinkedBlockingQueue
 
 import com.css.simulator.exception.SimulatorException
 import com.css.simulator.model.{Order, OrderNotification}
@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-case class CloudKitchen(ec: ExecutionContext, orderQueue: LinkedBlockingDeque[Order]) extends LazyLogging {
+case class CloudKitchen(ec: ExecutionContext, orderQueue: LinkedBlockingQueue[Order]) extends LazyLogging {
 
   def cookOrder(orderNotification: OrderNotification): Future[Order] = {
     val receivedOrder = Order.fromOrderNotification(orderNotification)
@@ -25,7 +25,7 @@ case class CloudKitchen(ec: ExecutionContext, orderQueue: LinkedBlockingDeque[Or
             case Success(readyOrder) => {
               //blocking operation
               orderQueue.put(readyOrder)
-              logger.info(s"Chef cooked order: $readyOrder")
+              //logger.info(s"Chef cooked order: $readyOrder")
               readyOrder
             }
           }

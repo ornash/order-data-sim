@@ -5,6 +5,9 @@ to do project
 	-readme
 	-try out other options
 	-allow option to create infinite threads
+	-cached thread pool cannot create native threads above 500 arrivals/second because macOs limit of 4k threads.. memory and stack size is not a problem.
+	-fixed thread pool adds scheduling delays as if there are limited drivers  or limited couriers so it doesnt really simulate what we want to measure
+	-
 
 Things Learnt
 	- thread.sleep doesnt release executor thread for others to use, CPU cannot be used during sleep. can you fix this?
@@ -80,5 +83,33 @@ Things Learnt
 [16:40:49.906] - Expected Courier ArrivalDelay Stats:   ThreadCount= 180, ArrivalSpeed=20, Total=1056, Avg=9005, Median=9000, Max=15000, Min=3000
 [16:40:49.910] - Courier Dispatch Stats:                ThreadCount= 180, ArrivalSpeed=20, Total=1056, Avg=32823, Median=32959, Max=63885, Min=3003
 [16:40:49.913] - Courier Wait Stats:                    ThreadCount= 180, ArrivalSpeed=20, Total=1056, Avg=2316, Median=447, Max=12484, Min=0
+
+
+[09:58:03.559] - Results Using match strategy: FifoMatchStrategy()
+[09:58:03.563] - Sizes: receivedOrders=33792, matchedOrders=33792
+[09:58:03.565] - Sizes: receivedCouriers=33792, matchedCouriers=33792
+[09:58:03.636] - Order Receipt Stats:                   ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=0, Median=0, Max=32, Min=0
+[09:58:03.662] - Expected Order Prep Stats:             ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=8946, Median=9000, Max=15000, Min=3000
+[09:58:03.682] - Order Cooking Stats:                   ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=9163, Median=9005, Max=25948, Min=3000
+[09:58:03.700] - Order Wait Stats:                      ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=100, Median=11, Max=5866, Min=0
+[09:58:03.712] - Expected Courier ArrivalDelay Stats:   ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=9006, Median=9000, Max=15000, Min=3000
+[09:58:03.728] - Courier Dispatch Stats:                ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=9220, Median=9006, Max=25948, Min=3000
+[09:58:03.740] - Courier Wait Stats:                    ThreadCount= 32, ArrivalSpeed=250, Total=33792, Avg=43, Median=1, Max=7939, Min=0
+[09:58:03.740] - Largest thread pool size: 3405
+[09:58:03.740] - StartTime = 1607266299437 EndTime = 1607266683740 Diff = 384303
+
+
+[10:09:32.116] - Results Using match strategy: FifoMatchStrategy()
+[10:09:32.124] - Sizes: receivedOrders=33792, matchedOrders=33792
+[10:09:32.126] - Sizes: receivedCouriers=33792, matchedCouriers=33792
+[10:09:32.205] - Order Receipt Stats:                   ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=0, Median=0, Max=113, Min=0
+[10:09:32.233] - Expected Order Prep Stats:             ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=8946, Median=9000, Max=15000, Min=3000
+[10:09:32.253] - Order Cooking Stats:                   ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=9202, Median=9006, Max=15011, Min=3000
+[10:09:32.276] - Order Wait Stats:                      ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=88, Median=12, Max=2069, Min=0
+[10:09:32.289] - Expected Courier ArrivalDelay Stats:   ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=8981, Median=9000, Max=15000, Min=3000
+[10:09:32.307] - Courier Dispatch Stats:                ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=9235, Median=9006, Max=15111, Min=3000
+[10:09:32.321] - Courier Wait Stats:                    ThreadCount= 32, ArrivalSpeed=500, Total=33792, Avg=55, Median=1, Max=6371, Min=0
+[10:09:32.321] - Largest thread pool size: 4011
+[10:09:32.321] - StartTime = 1607267057989 EndTime = 1607267372321 Diff = 314332
 
 

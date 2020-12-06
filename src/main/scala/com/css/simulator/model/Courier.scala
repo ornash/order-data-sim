@@ -60,6 +60,10 @@ object Courier {
     arrivedCourier.transform(MATCHED)
   }
 
+  def matched(arrivedCourier: Courier, newOrderId: String):  Try[Courier] = {
+    arrivedCourier.copy(Some(newOrderId)).transform(MATCHED)
+  }
+
   def deliver(matchedCourier: Courier): Try[Courier] = {
     matchedCourier.transform(HAS_DELIVERED)
   }

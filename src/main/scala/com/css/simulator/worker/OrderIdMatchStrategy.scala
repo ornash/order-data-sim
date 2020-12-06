@@ -8,38 +8,30 @@ import scala.util.{Failure, Success}
 
 case class OrderIdMatchStrategy() extends MatchStrategy with LazyLogging {
 
-  val cookedOrderMap = mutable.Map.empty[String, Order]
-  val arrivedCourierMap = mutable.Map.empty[String, Courier]
+  private val cookedOrderMap = mutable.Map.empty[String, Order]
+  private val arrivedCourierMap = mutable.Map.empty[String, Courier]
 
-  override def processBatch(ordersBatch: Seq[Order], couriersBatch: Seq[Courier]): Unit = {
-    ordersBatch.foreach(cookedOrder => {
+  override def matchCookedOrders(cookedOrdersBatch: Seq[Order]): Unit = {
+    cookedOrdersBatch.foreach(cookedOrder => {
       val waitingCourier = arrivedCourierMap.remove(cookedOrder.id)
       if (waitingCourier.isDefined) {
-        Courier.matched(waitingCourier.get) match {
+        matchOrderWithCourier(cookedOrder, waitingCourier.get) match {
           case Failure(exception) => throw exception
-          case Success(matchedCourier) => matchedCouriers.addOne(matchedCourier)
-        }
-
-        Order.pickup(cookedOrder) match {
-          case Failure(exception) => throw exception
-          case Success(matchedOrder) => matchedOrders.addOne(matchedOrder)
+          case Success(_) => {}
         }
       } else {
         cookedOrderMap.put(cookedOrder.id, cookedOrder)
       }
     })
+  }
 
-    couriersBatch.foreach(arrivedCourier => {
+  override def matchArrivedCouriers(arrivedCouriersBatch: Seq[Courier]): Unit = {
+    arrivedCouriersBatch.foreach(arrivedCourier => {
       val cookedOrder = cookedOrderMap.remove(arrivedCourier.orderId.get)
       if (cookedOrder.isDefined) {
-        Courier.matched(arrivedCourier) match {
+        matchOrderWithCourier(cookedOrder.get, arrivedCourier) match {
           case Failure(exception) => throw exception
-          case Success(matchedCourier) => matchedCouriers.addOne(matchedCourier)
-        }
-
-        Order.pickup(cookedOrder.get) match {
-          case Failure(exception) => throw exception
-          case Success(matchedOrder) => matchedOrders.addOne(matchedOrder)
+          case Success(_) => {}
         }
       } else {
         arrivedCourierMap.put(arrivedCourier.orderId.get, arrivedCourier)

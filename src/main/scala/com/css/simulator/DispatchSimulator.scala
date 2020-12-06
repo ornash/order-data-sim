@@ -1,6 +1,6 @@
 package com.css.simulator
 
-import java.util.concurrent.{Executors, LinkedBlockingDeque}
+import java.util.concurrent.{Executors, LinkedBlockingQueue, ThreadPoolExecutor}
 
 import com.css.simulator.model.{Courier, Order, OrderNotification}
 import com.css.simulator.reader.OrderNotificationReader
@@ -22,10 +22,11 @@ object DispatchSimulator extends App with LazyLogging {
 
   val simulatorConfig = readSimulatorConfig()
 
-  implicit val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(simulatorConfig.totalWorkerThreads))
+  val cachedThreadPool = Executors.newCachedThreadPool().asInstanceOf[ThreadPoolExecutor]
+  implicit val ec = ExecutionContext.fromExecutor(cachedThreadPool)
 
-  val orderQueue = new LinkedBlockingDeque[Order]
-  val courierQueue = new LinkedBlockingDeque[Courier]
+  val orderQueue = new LinkedBlockingQueue[Order]
+  val courierQueue = new LinkedBlockingQueue[Courier]
   val cloudKitchen = CloudKitchen(ec, orderQueue)
   val courierDispatcher = CourierDispatcher(ec, courierQueue)
 
@@ -70,7 +71,7 @@ object DispatchSimulator extends App with LazyLogging {
       }
     }
 
-    val allOrdersAndCouriers = duplicateOrderNotifications(allOrderNotifications, 3).sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
+    val allOrdersAndCouriers = duplicateOrderNotifications(allOrderNotifications, 8).sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
       logger.info(s"Processing order batch: ${orderBatch.toString()}")
 
       val promisedOrdersAndCouriers = orderBatch.map(orderNotification => {
@@ -119,6 +120,8 @@ object DispatchSimulator extends App with LazyLogging {
     printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.arrivalDelayDuration))
     printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration().get))
     printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration().get))
+
+    logger.info(s"Largest thread pool size: ${cachedThreadPool.getLargestPoolSize}")
   }
 
   //TODO: write this to a csv for analysis
