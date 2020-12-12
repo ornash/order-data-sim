@@ -3,7 +3,7 @@ package com.css.simulator.reader
 import com.css.simulator.exception.SimulatorException
 import org.scalatest.funsuite.AnyFunSuite
 
-class OrderNotificationReaderTestSuite extends AnyFunSuite {
+class OrderNotificationReaderTests extends AnyFunSuite {
 
   test("OrderNotificationReader reads all content") {
     val readOrdersAttempt = OrderNotificationReader.attemptReadOrdersFile("./src/test/resources/dispatch_orders_test.json")

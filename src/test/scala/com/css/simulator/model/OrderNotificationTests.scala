@@ -3,7 +3,7 @@ package com.css.simulator.model
 import upickle.default._
 import org.scalatest.funsuite.AnyFunSuite
 
-class OrderNotificationTestSuite extends AnyFunSuite {
+class OrderNotificationTests extends AnyFunSuite {
 
   test("Constructing OrderNotification without id should throw IllegalArgumentException") {
     assertThrows[IllegalArgumentException] {
