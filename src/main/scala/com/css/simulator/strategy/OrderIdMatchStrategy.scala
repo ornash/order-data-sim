@@ -1,4 +1,4 @@
-package com.css.simulator.worker
+package com.css.simulator.strategy
 
 import com.css.simulator.model.{Courier, Order}
 import com.typesafe.scalalogging.LazyLogging
@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-case class OrderIdMatchStrategy() extends MatchStrategy with LazyLogging {
+case class OrderIdMatchStrategy() extends MatchStrategy {
 
   private val cookedOrderMap = mutable.Map.empty[String, Order]
   private val arrivedCourierMap = mutable.Map.empty[String, Courier]

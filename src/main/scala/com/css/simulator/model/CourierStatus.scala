@@ -18,7 +18,7 @@ case class CourierStatus(statusType: CourierStatusType,
                          previousStatus: Option[CourierStatus] = Option.empty) {
 
   override def toString: String = {
-    s"CourierStatus($statusType at $startTime and took $durationInStatus)"
+    s"CourierStatus(in $statusType for duration=$durationInStatus from ${startTime.toLocalTime} after ${previousStatus.toString})"
   }
 
   def findCourierStatus(expectedStatusType: CourierStatusType): Option[CourierStatus] = {
@@ -46,12 +46,8 @@ case class CourierStatus(statusType: CourierStatusType,
    */
   def hasDelivered() : Boolean = findCourierStatus(HAS_DELIVERED).isDefined
 
-  def durationInStatus: Option[Duration] = {
-    if(endTime.isDefined) {
-      Some(Duration.between(startTime, endTime.get))
-    } else {
-      None
-    }
+  def durationInStatus: Duration = {
+     Duration.between(startTime, endTime.getOrElse(LocalDateTime.now()))
   }
 
   def transform(newStatusType: CourierStatusType): Try[CourierStatus] = Try {

@@ -32,7 +32,7 @@ case class Order(id: String,
 
   private def durationInStatus(expectedStatusType: OrderStatusType): Option[Duration] = {
     currentStatus.findOrderStatus(expectedStatusType) match {
-      case Some(expectedOrderStatus) => expectedOrderStatus.durationInStatus
+      case Some(expectedOrderStatus) => Some(expectedOrderStatus.durationInStatus)
       case None => None
     }
   }

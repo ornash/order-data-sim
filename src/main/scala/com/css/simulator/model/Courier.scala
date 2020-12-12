@@ -35,7 +35,7 @@ case class Courier(orderId: Option[String] = None,
 
   private def durationInStatus(expectedStatusType: CourierStatusType): Option[Duration] = {
     currentStatus.findCourierStatus(expectedStatusType) match {
-      case Some(expectedCourierStatus) => expectedCourierStatus.durationInStatus
+      case Some(expectedCourierStatus) => Some(expectedCourierStatus.durationInStatus)
       case None => None
     }
   }
@@ -44,7 +44,6 @@ case class Courier(orderId: Option[String] = None,
 object Courier {
   val DUMMY_COURIER = Courier.dispatchNewCourier(Option("dummy"), "dummy")
 
-  //FIXME: should orderId be Option?
   //FIXME: should duration be Random and should Random range be configurable
   def dispatchNewCourier(orderId: Option[String] = None,
                          courierId: String = "",

@@ -1,4 +1,4 @@
-package com.css.simulator.worker
+package com.css.simulator.strategy
 
 import java.time.LocalDateTime
 
@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-case class FifoMatchStrategy() extends MatchStrategy with LazyLogging {
+case class FifoMatchStrategy() extends MatchStrategy {
   implicit def dateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
 
   private val cookedOrders = mutable.ArrayBuffer.empty[Order]

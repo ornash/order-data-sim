@@ -1,13 +1,13 @@
-package com.css.simulator.worker
+package com.css.simulator.strategy
 
 import com.css.simulator.exception.SimulatorException
-import com.css.simulator.model.{Courier, Order}
+import com.css.simulator.model.{Courier, Order, OrderAndCourier}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-trait MatchStrategy {
-  case class OrderAndCourier(order: Order, courier: Courier)
+trait MatchStrategy extends LazyLogging {
 
   private val matchedOrderAndCouriers = mutable.ArrayBuffer.empty[OrderAndCourier]
 
@@ -33,6 +33,7 @@ trait MatchStrategy {
 
           case Success(matchedCourier) => {
             val matchedOrderAndCourier = OrderAndCourier(pickupOrder, matchedCourier)
+            logger.info(s"Matched order-id: ${pickupOrder.id} with courier.")
             matchedOrderAndCouriers.addOne(matchedOrderAndCourier)
             matchedOrderAndCourier
           }

@@ -1,67 +1,80 @@
 package com.css.simulator
 
-import java.util.concurrent.{Executors, LinkedBlockingQueue, ThreadPoolExecutor}
+import java.time.LocalDateTime
+import java.util.concurrent.LinkedBlockingQueue
 
 import com.css.simulator.model.{Courier, Order, OrderNotification}
 import com.css.simulator.reader.OrderNotificationReader
+import com.css.simulator.strategy.MatchStrategyStats
 import com.css.simulator.worker._
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.io.StdIn._
-import scala.util.{Failure, Success}
+import scala.concurrent.{Await, Future}
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object DispatchSimulator extends App with LazyLogging {
-  val THREAD_POOL_SIZE = 32
+  val ONE_SECOND = 1 * 1000
 
-  case class SimulatorConfig(ordersFilePath: String,
-                             orderReceiptSpeed: Int,
-                             totalWorkerThreads: Int = THREAD_POOL_SIZE,
-                             matchStrategy: MatchStrategy)
-
-  val simulatorConfig = readSimulatorConfig()
-
-  val cachedThreadPool = Executors.newCachedThreadPool().asInstanceOf[ThreadPoolExecutor]
-  implicit val ec = ExecutionContext.fromExecutor(cachedThreadPool)
+  val simulatorConfig = SimulatorConfig.readSimulatorConfig()
 
   val orderQueue = new LinkedBlockingQueue[Order]
   val courierQueue = new LinkedBlockingQueue[Courier]
-  val cloudKitchen = CloudKitchen(ec, orderQueue)
-  val courierDispatcher = CourierDispatcher(ec, courierQueue)
+  val cloudKitchen = CloudKitchen(simulatorConfig, orderQueue, courierQueue)
 
-  val startTime = System.currentTimeMillis()
+  val matchStrategy = simulatorConfig.matchStrategy
+  val matcher = Matcher(orderQueue, courierQueue, matchStrategy)
+
+  val orderReceiptSpeed = simulatorConfig.orderReceiptSpeed
+
+  val startTime = LocalDateTime.now()
   OrderNotificationReader.attemptReadOrdersFile(simulatorConfig.ordersFilePath) match {
     case Success(allOrders) => {
-      startSimulation(allOrders)
+      performSimulation(allOrders)
     }
     case Failure(exception) => {
       logger.error("Simulation failed.", exception)
     }
   }
+  val endTime = LocalDateTime.now()
+  val simulationDuration = java.time.Duration.between(startTime, endTime)
+  logger.info(s"StartTime = $startTime, EndTime = $endTime, Total SimulationDuration = $simulationDuration}")
+  System.exit(0)
 
-  def readSimulatorConfig(): SimulatorConfig = {
-    var inputLine = readLine("Enter orders input file [./dispatch_orders.json]: ")
-    val ordersFilePath = if(inputLine.isEmpty) "./dispatch_orders.json" else inputLine
+  def performSimulation(allOrderNotifications: Seq[OrderNotification]): Unit = {
+    try {
+      val cookedOrdersProcessor = matcher.startProcessingCookedOrders()
+      val allOrdersAndCouriers = simulateOrderFlow(allOrderNotifications)
 
-    inputLine = readLine("Enter order receipt speed per second [2]: ")
-    val orderReceiptSpeed = if(inputLine.isEmpty) 2 else inputLine.toInt
+      val allOrders = allOrdersAndCouriers._1
+      val failedOrders = Await.result(Future.sequence(allOrders), Duration.Inf).filter(_.isFailure)
+      failedOrders.foreach(failedOrder => logger.error("Failed to cook order: ", failedOrder.failed.get))
 
-    inputLine = readLine(s"Enter worker thread count [$THREAD_POOL_SIZE]: ")
-    val totalWorkerThreads = if(inputLine.isEmpty) THREAD_POOL_SIZE else inputLine.toInt
+      val allCouriers = allOrdersAndCouriers._2
+      val failedCouriers = Await.result(Future.sequence(allCouriers), Duration.Inf).filter(_.isFailure)
+      failedCouriers.foreach(failedCourier => logger.error("Failed to dispatch courier: ", failedCourier.failed.get))
 
-    inputLine = readLine(s"Enter 1 for FIFO match strategy or 2 for OrderId match strategy: [1]: ")
-    val strategySelection = if(inputLine.isEmpty) 1 else inputLine.toInt
+      orderQueue.put(Order.DUMMY_ORDER)
+      courierQueue.put(Courier.DUMMY_COURIER)
 
-    SimulatorConfig(ordersFilePath, orderReceiptSpeed, totalWorkerThreads, if(strategySelection == 1) FifoMatchStrategy() else OrderIdMatchStrategy())
+      Await.result(cookedOrdersProcessor, Duration.Inf)
+
+      MatchStrategyStats.printAllMatches(matchStrategy)
+      logger.info(s"Results using match strategy: $matchStrategy")
+      logger.info(s"Order receipt speed: ${simulatorConfig.orderReceiptSpeed}")
+      logger.info(s"Cooking thread count: ${simulatorConfig.totalWorkerThreads}")
+      logger.info(s"Courier dispatch thread count: ${simulatorConfig.totalWorkerThreads}")
+
+      logger.info(s"Sizes: receivedOrders=${allOrders.size}, failedOrders=${failedOrders.size}, matchedOrders=${matchStrategy.getMatchedOrders.size}")
+      logger.info(s"Sizes: dispatchedCouriers=${allCouriers.size}, failedCouriers=${failedCouriers.size}, matchedCouriers=${matchStrategy.getMatchedCouriers.size}")
+      MatchStrategyStats.printStats(matchStrategy)
+    } catch {
+      case ex: Exception => logger.error("Simulation failed: ", ex)
+    }
   }
 
-  def startSimulation(allOrderNotifications: Seq[OrderNotification]): Unit = {
-    val orderReceiptSpeed = simulatorConfig.orderReceiptSpeed
-
-    val matcher = Matcher(ec, orderQueue, courierQueue, simulatorConfig.matchStrategy)
-    val processor = Future {matcher.processCompletedOrders()}(ec)
-
+  def simulateOrderFlow(allOrderNotifications: Seq[OrderNotification]): (Seq[Future[Try[Order]]], Seq[Future[Try[Courier]]]) = {
     def duplicateOrderNotifications(notifications: Seq[OrderNotification], times: Int) : Seq[OrderNotification] = {
       if(times == 0) {
         notifications
@@ -71,85 +84,19 @@ object DispatchSimulator extends App with LazyLogging {
       }
     }
 
-    val allOrdersAndCouriers = duplicateOrderNotifications(allOrderNotifications, 8).sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
-      logger.info(s"Processing order batch: ${orderBatch.toString()}")
+    duplicateOrderNotifications(allOrderNotifications, 1).sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
+      logger.info(s"Received new batch of ${orderBatch.size} orders.")
 
       val promisedOrdersAndCouriers = orderBatch.map(orderNotification => {
         val promisedOrder = cloudKitchen.cookOrder(orderNotification)
-        val promisedCourier = courierDispatcher.dispatchCourier(orderNotification)
+        val promisedCourier = cloudKitchen.dispatchCourier(orderNotification)
+        logger.info(s"Dispatched courier and started cooking order for $orderNotification")
 
         Tuple2(promisedOrder, promisedCourier)
       })
-      Thread.sleep(1000)
+      Thread.sleep(ONE_SECOND)
 
       promisedOrdersAndCouriers
     }).toSeq.unzip
-
-    val allOrders = allOrdersAndCouriers._1
-    val allCouriers = allOrdersAndCouriers._2
-    Await.result(Future.sequence(allOrders), Duration.Inf)
-    Await.result(Future.sequence(allCouriers), Duration.Inf)
-
-    orderQueue.put(Order.DUMMY_ORDER)
-    courierQueue.put(Courier.DUMMY_COURIER)
-
-//    processor.onComplete {
-//      case Success(_) => logger.info(s"Processor completed.")
-//      case Failure(t) => logger.error(s"Processor failed", t)
-//    }(ec)
-    Await.result(processor, Duration.Inf)
-
-    val matchStrategy = matcher.matchStrategy
-    matchStrategy.getMatchedOrders().foreach(order => {
-      logger.info(s"Expected prepDuration = ${order.prepDuration} for order $order")
-    })
-
-    matchStrategy.getMatchedCouriers().foreach(courier => {
-      logger.info(s"Expected arrivalDelay = ${courier.arrivalDelayDuration} for courier $courier")
-    })
-
-    logger.info(s"Results Using match strategy: $matchStrategy")
-    logger.info(s"Sizes: receivedOrders=${allOrders.size}, matchedOrders=${matchStrategy.getMatchedOrders.size}")
-    logger.info(s"Sizes: receivedCouriers=${allCouriers.size}, matchedCouriers=${matchStrategy.getMatchedCouriers.size}")
-
-    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.receivedDuration().get))
-    printStats("Expected Order Prep", matchStrategy.getMatchedOrders.map(_.prepDuration))
-    printStats("Order Cooking", matchStrategy.getMatchedOrders.map(_.cookDuration().get))
-    printStats("Order Wait", matchStrategy.getMatchedOrders.map(_.waitDuration().get))
-
-    printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.arrivalDelayDuration))
-    printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration().get))
-    printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration().get))
-
-    logger.info(s"Largest thread pool size: ${cachedThreadPool.getLargestPoolSize}")
   }
-
-  //TODO: write this to a csv for analysis
-  def printStats(of: String, durations: Seq[java.time.Duration]): Unit = {
-    val total = durations.size
-    val avgMs = durations.map(_.toMillis).foldLeft(0L)(_ + _) / total
-    val maxMs = durations.map(_.toMillis).max
-    val minMs = durations.map(_.toMillis).min
-    val medianMs = medianCalculator(durations.map(_.toMillis))
-    val arrivalSpeed = simulatorConfig.orderReceiptSpeed
-    val threadCount = simulatorConfig.totalWorkerThreads
-    val indentString = " " * (30 - of.length)
-    logger.info(s"$of Stats: $indentString ThreadCount= $threadCount, ArrivalSpeed=$arrivalSpeed, Total=$total, Avg=$avgMs, Median=$medianMs, Max=$maxMs, Min=$minMs")
-  }
-
-  def medianCalculator(seq: Seq[Long]): Long = {
-    //In order if you are not sure that 'seq' is sorted
-    val sortedSeq = seq.sortWith(_ < _)
-
-    if (seq.size % 2 == 1) {
-      sortedSeq(sortedSeq.size / 2)
-    } else {
-      val (up, down) = sortedSeq.splitAt(seq.size / 2)
-      (up.last + down.head) / 2
-    }
-  }
-
-  logger.info(s"StartTime = $startTime EndTime = ${System.currentTimeMillis()} Diff = ${System.currentTimeMillis() - startTime}")
-  System.exit(0)
 }
-

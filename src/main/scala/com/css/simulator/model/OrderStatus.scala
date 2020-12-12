@@ -19,7 +19,7 @@ case class OrderStatus(statusType: OrderStatusType,
                        previousStatus: Option[OrderStatus] = Option.empty) {
 
   override def toString: String = {
-    s"OrderStatus($statusType at $startTime and took $durationInStatus)"
+    s"OrderStatus(in $statusType for duration=$durationInStatus from ${startTime.toLocalTime} after ${previousStatus.toString})"
   }
 
   def findOrderStatus(expectedStatusType: OrderStatusType): Option[OrderStatus] = {
@@ -57,12 +57,8 @@ case class OrderStatus(statusType: OrderStatusType,
    */
   def isCooked(): Boolean = isReady() || isPickedUp() || isDelivered()
 
-  def durationInStatus: Option[Duration] = {
-    if(endTime.isDefined) {
-      Some(Duration.between(startTime, endTime.get))
-    } else {
-      None
-    }
+  def durationInStatus: Duration = {
+    Duration.between(startTime, endTime.getOrElse(LocalDateTime.now()))
   }
 
   def transform(newStatusType: OrderStatusType): Try[OrderStatus] = Try {
