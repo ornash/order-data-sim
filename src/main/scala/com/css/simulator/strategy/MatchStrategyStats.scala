@@ -18,7 +18,7 @@ object MatchStrategyStats extends LazyLogging {
 
     logger.info("")
 
-    printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.arrivalDelayDuration))
+    printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.transitDuration))
     printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration().get))
     printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration().get))
   }

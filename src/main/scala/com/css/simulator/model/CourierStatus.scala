@@ -32,10 +32,11 @@ case class CourierStatus(statusType: CourierStatusType,
   }
 
   /**
-   * @return duration in current state from startTime. If endTime is unspecified, current instant is used as endTime.
+   * @return duration in current state from startTime. If endTime is unspecified, duration is unspecified too.
    */
-  def durationInStatus(): Duration = {
-    Duration.between(startTime, endTime.getOrElse(LocalDateTime.now()))
+  def durationInStatus: Option[Duration] = endTime match {
+    case Some(endTimeVal) => Some(Duration.between(startTime, endTimeVal))
+    case None => None
   }
 
   /**

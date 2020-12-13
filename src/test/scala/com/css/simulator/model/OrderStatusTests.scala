@@ -16,10 +16,7 @@ class OrderStatusTests extends AnyFunSuite {
 
   test("Duration in status without endTime") {
     val cooking = OrderStatus(COOKING, START_TIME, None)
-    val firstDuration = cooking.durationInStatus
-    assert(firstDuration.getNano > 0)
-    //should be greater than previously returned duration
-    assert(cooking.durationInStatus.compareTo(firstDuration) > 0)
+    assert(cooking.durationInStatus.isEmpty)
   }
 
   test("Finding order status same as current status") {

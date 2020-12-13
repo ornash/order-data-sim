@@ -18,10 +18,10 @@ case object DELIVERED extends OrderStatusType //Order delivered to customer
  * Represents current status of an order along with its previous state.
  * The previous state will have its own previous state and so on.
  *
- * @param statusType     - current state
- * @param startTime      - time of entry into current state
- * @param endTime        - time of exit from current state - optional
- * @param previousStatus - previous state before current state - optional
+ * @param statusType     current state
+ * @param startTime      time of entry into current state
+ * @param endTime        time of exit from current state - optional
+ * @param previousStatus previous state before current state - optional
  */
 case class OrderStatus(statusType: OrderStatusType,
                        startTime: LocalDateTime = LocalDateTime.now(),
@@ -33,10 +33,11 @@ case class OrderStatus(statusType: OrderStatusType,
   }
 
   /**
-   * @return duration in current state from startTime. If endTime is unspecified, current instant is used as endTime.
+   * @return duration in current state from startTime. If endTime is unspecified, duration is unspecified too.
    */
-  def durationInStatus: Duration = {
-    Duration.between(startTime, endTime.getOrElse(LocalDateTime.now()))
+  def durationInStatus: Option[Duration] = endTime match {
+    case Some(endTimeVal) => Some(Duration.between(startTime, endTimeVal))
+    case None => None
   }
 
   /**

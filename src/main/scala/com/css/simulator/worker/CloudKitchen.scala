@@ -50,7 +50,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
     }
 
     val dispatchedCourier = Courier.dispatchNewCourier(orderNotificationId)
-    val arrivalDelayInSeconds = dispatchedCourier.arrivalDelayDuration.getSeconds
+    val arrivalDelayInSeconds = dispatchedCourier.transitDuration.getSeconds
 
     val couriersPromise = courierDispatchScheduler.scheduleTaskWithDelay(() => courierArrived(dispatchedCourier), arrivalDelayInSeconds)
     couriersPromise.future

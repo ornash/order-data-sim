@@ -16,10 +16,7 @@ class CourierStatusTests extends AnyFunSuite {
 
   test("Duration in status without endTime") {
     val arrived = CourierStatus(ARRIVED, START_TIME, None)
-    val firstDuration = arrived.durationInStatus
-    assert(firstDuration.getNano > 0)
-    //should be greater than previously returned duration
-    assert(arrived.durationInStatus.compareTo(firstDuration) > 0)
+    assert(arrived.durationInStatus.isEmpty)
   }
 
   test("Finding courier status same as current status") {

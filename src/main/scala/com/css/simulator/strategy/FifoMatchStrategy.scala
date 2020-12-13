@@ -12,7 +12,7 @@ case class FifoMatchStrategy() extends MatchStrategy {
   implicit def dateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
 
   private val cookedOrders = mutable.ArrayBuffer.empty[Order]
-  private val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalTime().get)(dateTimeOrdering))
+  private val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalInstant().get)(dateTimeOrdering))
 
   private def applyFifoMatchStrategy(): Unit = {
     val cookedOrdersToBeRemoved = mutable.ArrayBuffer.empty[Order]
