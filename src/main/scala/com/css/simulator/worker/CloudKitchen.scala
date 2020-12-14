@@ -1,5 +1,6 @@
 package com.css.simulator.worker
 
+import java.time.Duration
 import java.util.concurrent.LinkedBlockingQueue
 
 import com.css.simulator.SimulatorConfig
@@ -9,7 +10,7 @@ import com.css.simulator.strategy.{FifoMatchStrategy, OrderIdMatchStrategy}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBlockingQueue[Order], courierQueue: LinkedBlockingQueue[Courier]) extends LazyLogging {
 
@@ -49,7 +50,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
       case x => throw SimulatorException(s"Courier dispatch is not supported for: $x")
     }
 
-    val dispatchedCourier = Courier.dispatchNewCourier(orderNotificationId)
+    val dispatchedCourier = Courier.dispatchNewCourier(orderNotificationId, transitDuration = Duration.ofSeconds(Random.between(3, 16)))
     val arrivalDelayInSeconds = dispatchedCourier.transitDuration.getSeconds
 
     val couriersPromise = courierDispatchScheduler.scheduleTaskWithDelay(() => courierArrived(dispatchedCourier), arrivalDelayInSeconds)

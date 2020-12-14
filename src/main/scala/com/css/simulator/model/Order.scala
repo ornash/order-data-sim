@@ -32,7 +32,7 @@ case class Order(id: String,
   /**
    * @return duration spent in received state before starting to cook the order
    */
-  def receivedDuration(): Option[Duration] = {
+  def schedulerDelayDuration(): Option[Duration] = {
     durationInStatus(RECEIVED)
   }
 

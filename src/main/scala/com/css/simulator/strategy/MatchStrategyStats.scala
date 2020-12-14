@@ -11,7 +11,7 @@ object MatchStrategyStats extends LazyLogging {
   }
 
   def printStats(matchStrategy: MatchStrategy): Unit = {
-    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.receivedDuration().get))
+    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.schedulerDelayDuration().get))
     printStats("Expected Order Prep", matchStrategy.getMatchedOrders.map(_.prepDuration))
     printStats("Order Cooking", matchStrategy.getMatchedOrders.map(_.cookDuration().get))
     printStats("Order Wait", matchStrategy.getMatchedOrders.map(_.waitDuration().get))

@@ -55,13 +55,6 @@ case class Courier(orderId: Option[String] = None,
     durationInStatus(ARRIVED)
   }
 
-  /**
-   * @return duration between match of courier with an [[com.css.simulator.model.Order]] and Order's delivery.
-   */
-  def deliveryDuration(): Option[Duration] = {
-    durationInStatus(MATCHED)
-  }
-
   private def durationInStatus(expectedStatusType: CourierStatusType): Option[Duration] = {
     currentStatus.findCourierStatus(expectedStatusType) match {
       case Some(expectedCourierStatus) => expectedCourierStatus.durationInStatus

@@ -1,5 +1,7 @@
 package com.css.simulator.model
 
+import java.time.Duration
+
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.util.{Failure, Success}
@@ -10,6 +12,7 @@ class OrderTests extends AnyFunSuite {
   val PREP_TIME_SECONDS = 12
   val ORDER_NOTIFICATION = OrderNotification(ID, NAME, PREP_TIME_SECONDS)
   val NEW_ORDER = Order.newOrder(ID, NAME, PREP_TIME_SECONDS)
+  val SLEEP_DURATION = Duration.ofMillis(100)
 
   test("Construct order from notification") {
     val newOrder = Order.fromOrderNotification(ORDER_NOTIFICATION)
@@ -30,7 +33,7 @@ class OrderTests extends AnyFunSuite {
   test("Start cooking order successful") {
     val cookingOrder = Order.startCooking(NEW_ORDER)
     assert(cookingOrder.isSuccess)
-    assertResult(COOKING)(cookingOrder.get.currentStatus.statusType)
+    assert(cookingOrder.get.currentStatus.isCooking())
   }
 
   test("Start cooking order failure") {
@@ -43,7 +46,7 @@ class OrderTests extends AnyFunSuite {
     val cookingOrder = transformOrder(NEW_ORDER, COOKING)
     val readyOrder = Order.readyForPickup(cookingOrder)
     assert(readyOrder.isSuccess)
-    assertResult(READY)(readyOrder.get.currentStatus.statusType)
+    assert(readyOrder.get.currentStatus.isReady())
   }
 
   test("Order ready failure") {
@@ -54,7 +57,7 @@ class OrderTests extends AnyFunSuite {
     val readyOrder = transformOrder(NEW_ORDER, READY)
     val pickedupOrder = Order.pickup(readyOrder)
     assert(pickedupOrder.isSuccess)
-    assertResult(PICKED_UP)(pickedupOrder.get.currentStatus.statusType)
+    assert(pickedupOrder.get.currentStatus.isPickedUp())
   }
 
   test("Order pickup failure") {
@@ -65,11 +68,36 @@ class OrderTests extends AnyFunSuite {
     val pickedOrder = transformOrder(NEW_ORDER, PICKED_UP)
     val deliveredOrder = Order.deliver(pickedOrder)
     assert(deliveredOrder.isSuccess)
-    assertResult(DELIVERED)(deliveredOrder.get.currentStatus.statusType)
+    assert(deliveredOrder.get.currentStatus.isDelivered())
   }
 
-  test("Order ready failure") {
+  test("Order delivery failure") {
     assert(Order.deliver(NEW_ORDER).isFailure)
+  }
+
+  test("Duration unavailable") {
+    assert(NEW_ORDER.schedulerDelayDuration().isEmpty)
+  }
+
+  test("Scheduler delay duration") {
+    val newOrder = Order.newOrder(ID, NAME, PREP_TIME_SECONDS)
+    Thread.sleep(SLEEP_DURATION.toMillis)
+    val cookingOrder = transformOrder(newOrder, COOKING)
+    assert(cookingOrder.schedulerDelayDuration().get.compareTo(SLEEP_DURATION) >= 0)
+  }
+
+  test("Cook duration") {
+    val cookingOrder = transformOrder(NEW_ORDER, COOKING)
+    Thread.sleep(SLEEP_DURATION.toMillis)
+    val readyOrder = transformOrder(cookingOrder, READY)
+    assert(readyOrder.cookDuration().get.compareTo(SLEEP_DURATION) >= 0)
+  }
+
+  test("Wait duration") {
+    val readyOrder = transformOrder(NEW_ORDER, READY)
+    Thread.sleep(SLEEP_DURATION.toMillis)
+    val pickedupOrder = transformOrder(readyOrder, PICKED_UP)
+    assert(pickedupOrder.waitDuration().get.compareTo(SLEEP_DURATION) >= 0)
   }
 
   private def transformOrder(order: Order, to: OrderStatusType) : Order = {

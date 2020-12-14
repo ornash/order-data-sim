@@ -11,7 +11,7 @@ class CourierStatusTests extends AnyFunSuite {
   val DISPATCHED_CS = CourierStatus(DISPATCHED, START_TIME, Some(END_TIME))
 
   test("Duration in status") {
-    assertResult(DURATION)(DISPATCHED_CS.durationInStatus)
+    assertResult(DURATION)(DISPATCHED_CS.durationInStatus.get)
   }
 
   test("Duration in status without endTime") {

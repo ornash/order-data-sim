@@ -11,7 +11,7 @@ class OrderStatusTests extends AnyFunSuite {
   val RECEIVED_OS = OrderStatus(RECEIVED, START_TIME, Some(END_TIME))
 
   test("Duration in status") {
-    assertResult(DURATION)(RECEIVED_OS.durationInStatus)
+    assertResult(DURATION)(RECEIVED_OS.durationInStatus.get)
   }
 
   test("Duration in status without endTime") {
