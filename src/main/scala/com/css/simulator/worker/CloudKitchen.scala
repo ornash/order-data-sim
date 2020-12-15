@@ -12,11 +12,25 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Random, Success, Try}
 
+/**
+ * Cloud kitchen simulator that accepts order notifications for cooking orders and dispatching couriers for those orders.
+ * Cooking request delay is simulated based on prepTime in order notification.
+ * Courier transit delay is simulated based on a random number between minDispatchDelay and maxDispatchDelay from [[com.css.simulator.SimulatorConfig]]
+ *
+ * @param simulatorConfig Config for simulation
+ * @param orderQueue      Queue for putting ready/cooked orders from cloud kitchen.
+ * @param courierQueue    Queue for putting couriers arrived at cloud kitchen.
+ */
 case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBlockingQueue[Order], courierQueue: LinkedBlockingQueue[Courier]) extends LazyLogging {
+  private val courierDispatchScheduler = DelayedTaskScheduler(simulatorConfig.courierDispatchThreads)
+  private val orderScheduler = DelayedTaskScheduler(simulatorConfig.orderWorkerThreads)
+  private val minDispatchDelay = simulatorConfig.minDispatchDelay
+  private val maxDispatchDelayExclusive = simulatorConfig.maxDispatchDelay
 
-  private val courierDispatchScheduler = DelayedTaskScheduler(simulatorConfig.totalWorkerThreads)
-  private val orderScheduler = DelayedTaskScheduler(simulatorConfig.totalWorkerThreads)
-
+  /**
+   * Starts cooking the order based on orderNotification and returns a [[scala.concurrent.Future]] that will complete
+   * after cooking prepTime delay expires indicating that order is ready.
+   */
   def cookOrder(orderNotification: OrderNotification): Future[Try[Order]] = {
     val receivedOrder = Order.fromOrderNotification(orderNotification)
 
@@ -31,6 +45,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
     chefsPromise.future
   }
 
+  //make the order ready and post it on the orderQueue
   protected def makeOrderReady(cookingOrder: Order): Try[Order] = Try {
     Order.readyForPickup(cookingOrder) match {
       case Failure(ex) => throw SimulatorException(s"Failed to make order ready for pickup: $cookingOrder", ex)
@@ -43,6 +58,10 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
     }
   }
 
+  /**
+   * Dispatches a courier based on orderNotification and matchStrategy. Returns a [[scala.concurrent.Future]] that will
+   * complete after courier's transit delay expires indicating that courier has arrived.
+   */
   def dispatchCourier(orderNotification: OrderNotification): Future[Try[Courier]] = {
     val orderId = simulatorConfig.matchStrategy match {
       case FifoMatchStrategy() => None
@@ -50,7 +69,8 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
       case x => throw SimulatorException(s"Courier dispatch is not supported for: $x")
     }
 
-    val dispatchedCourier = Courier.dispatchNewCourier(orderId, transitDuration = Duration.ofSeconds(Random.between(3, 16)))
+    val transitDelay = Duration.ofSeconds(Random.between(minDispatchDelay, maxDispatchDelayExclusive))
+    val dispatchedCourier = Courier.dispatchNewCourier(orderId, transitDuration = transitDelay)
     val arrivalDelayInSeconds = dispatchedCourier.transitDuration.getSeconds
 
     val couriersPromise = courierDispatchScheduler.scheduleTaskWithDelay(() => courierArrived(dispatchedCourier), arrivalDelayInSeconds)

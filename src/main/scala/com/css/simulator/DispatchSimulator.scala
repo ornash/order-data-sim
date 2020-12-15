@@ -44,7 +44,7 @@ object DispatchSimulator extends App with LazyLogging {
 
   def performSimulation(allOrderNotifications: Seq[OrderNotification]): Unit = {
     try {
-      val readyOrdersProcessor = matcher.startProcessingReadyOrders()
+      val readyOrdersProcessor = matcher.startMatchProcessing()
       val allOrdersAndCouriers = simulateOrderFlow(allOrderNotifications)
 
       val allOrders = allOrdersAndCouriers._1
@@ -63,8 +63,8 @@ object DispatchSimulator extends App with LazyLogging {
       MatchStrategyStats.printAllMatches(matchStrategy)
       logger.info(s"Results using match strategy: $matchStrategy")
       logger.info(s"Order receipt speed: ${simulatorConfig.orderReceiptSpeed}")
-      logger.info(s"Cooking thread count: ${simulatorConfig.totalWorkerThreads}")
-      logger.info(s"Courier dispatch thread count: ${simulatorConfig.totalWorkerThreads}")
+      logger.info(s"Cooking thread count: ${simulatorConfig.orderWorkerThreads}")
+      logger.info(s"Courier dispatch thread count: ${simulatorConfig.orderWorkerThreads}")
 
       logger.info(s"Sizes: receivedOrders=${allOrders.size}, failedOrders=${failedOrders.size}, matchedOrders=${matchStrategy.getMatchedOrders.size}")
       logger.info(s"Sizes: dispatchedCouriers=${allCouriers.size}, failedCouriers=${failedCouriers.size}, matchedCouriers=${matchStrategy.getMatchedCouriers.size}")

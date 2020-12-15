@@ -10,13 +10,24 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
+/**
+ * Matches orders from orderQueue with couriers from courierQueue based on specified matchStrategy.
+ */
 case class Matcher(orderQueue: LinkedBlockingQueue[Order],
                    courierQueue: LinkedBlockingQueue[Courier],
                    matchStrategy: MatchStrategy) extends LazyLogging {
 
   implicit val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
-  def startProcessingReadyOrders(): Future[Boolean] = Future {
+  /**
+   * Starts matching process between ready orders and arrived couriers.
+   * This process stops when both last order is ready and last courier has arrived.
+   * Expected last order object is Order.DUMMY_ORDER.
+   * Expected last courier object is Courier.DUMMY_COURIER.
+   *
+   * @return an awaitable future
+   */
+  def startMatchProcessing(): Future[Boolean] = Future {
     var isLastOrderReady = false
     var hasLastCourierArrived = false
     while(hasLastCourierArrived == false || isLastOrderReady == false) {
