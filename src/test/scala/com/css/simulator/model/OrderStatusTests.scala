@@ -57,14 +57,6 @@ class OrderStatusTests extends AnyFunSuite {
     assert(cooking.transform(READY).get.transform(PICKED_UP).get.transform(DELIVERED).get.isDelivered())
   }
 
-  test("isCooked works") {
-    assert(RECEIVED_OS.isCooked() == false)
-    val cooking = RECEIVED_OS.transform(COOKING).get
-    assert(cooking.transform(READY).get.isCooked())
-    assert(cooking.transform(READY).get.transform(PICKED_UP).get.isCooked())
-    assert(cooking.transform(READY).get.transform(PICKED_UP).get.transform(DELIVERED).get.isCooked())
-  }
-
   test("valid transformations") {
     assert(RECEIVED_OS.transform(COOKING).isSuccess)
     assert(RECEIVED_OS.transform(COOKING).get.isCooking())

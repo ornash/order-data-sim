@@ -75,11 +75,6 @@ case class OrderStatus(statusType: OrderStatusType,
   def isDelivered(): Boolean = findOrderStatus(DELIVERED).isDefined
 
   /**
-   * @return true of this status was in READY, PICKED_UP or DELIVERED state.
-   */
-  def isCooked(): Boolean = isReady() || isPickedUp() || isDelivered()
-
-  /**
    * Try transformation of current status into new status if the transition is valid. The try fails for an invalid
    * state transition. If successful, returned new status will have current status as its previous status with
    * current system time as endTime of current status.

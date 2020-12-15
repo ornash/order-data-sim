@@ -9,9 +9,9 @@ import scala.util.{Failure, Success}
 class OrderTests extends AnyFunSuite {
   val ID = "2123"
   val NAME = "cake"
-  val PREP_TIME_SECONDS = 12
-  val ORDER_NOTIFICATION = OrderNotification(ID, NAME, PREP_TIME_SECONDS)
-  val NEW_ORDER = Order.newOrder(ID, NAME, PREP_TIME_SECONDS)
+  val PREP_DURATION = Duration.ofSeconds(12)
+  val ORDER_NOTIFICATION = OrderNotification(ID, NAME, PREP_DURATION.getSeconds.intValue())
+  val NEW_ORDER = Order.newOrder(ID, NAME, PREP_DURATION)
   val SLEEP_DURATION = Duration.ofMillis(100)
 
   test("Construct order from notification") {
@@ -23,10 +23,10 @@ class OrderTests extends AnyFunSuite {
   }
 
   test("Construct new order") {
-    val newOrder = Order.newOrder(ID, NAME, PREP_TIME_SECONDS)
+    val newOrder = Order.newOrder(ID, NAME, PREP_DURATION)
     assertResult(ID)(newOrder.id)
     assertResult(NAME)(newOrder.name)
-    assertResult(PREP_TIME_SECONDS)(newOrder.prepDuration.getSeconds)
+    assertResult(PREP_DURATION)(newOrder.prepDuration.getSeconds)
     assertResult(RECEIVED)(newOrder.currentStatus.statusType)
   }
 
@@ -80,7 +80,7 @@ class OrderTests extends AnyFunSuite {
   }
 
   test("Scheduler delay duration") {
-    val newOrder = Order.newOrder(ID, NAME, PREP_TIME_SECONDS)
+    val newOrder = Order.newOrder(ID, NAME, PREP_DURATION)
     Thread.sleep(SLEEP_DURATION.toMillis)
     val cookingOrder = transformOrder(newOrder, COOKING)
     assert(cookingOrder.schedulerDelayDuration().get.compareTo(SLEEP_DURATION) >= 0)

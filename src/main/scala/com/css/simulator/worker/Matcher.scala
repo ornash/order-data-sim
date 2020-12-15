@@ -16,10 +16,10 @@ case class Matcher(orderQueue: LinkedBlockingQueue[Order],
 
   implicit val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
-  def startProcessingCookedOrders(): Future[Boolean] = Future {
-    var isLastOrderCooked = false
+  def startProcessingReadyOrders(): Future[Boolean] = Future {
+    var isLastOrderReady = false
     var hasLastCourierArrived = false
-    while(hasLastCourierArrived == false || isLastOrderCooked == false) {
+    while(hasLastCourierArrived == false || isLastOrderReady == false) {
       if(hasLastCourierArrived == false) {
         val arrivedCouriersList = new util.ArrayList[Courier]()
         //blocking operation
@@ -31,17 +31,17 @@ case class Matcher(orderQueue: LinkedBlockingQueue[Order],
         matchStrategy.matchArrivedCouriers(arrivedCouriersBatch)
       }
 
-      if(isLastOrderCooked == false) {
-        val cookedOrdersList = new util.ArrayList[Order]()
+      if(isLastOrderReady == false) {
+        val readyOrdersList = new util.ArrayList[Order]()
         //blocking operation
-        cookedOrdersList.add(orderQueue.take())
-        orderQueue.drainTo(cookedOrdersList)
-        isLastOrderCooked = cookedOrdersList.asScala.find(cookedOrder => cookedOrder == Order.DUMMY_ORDER).isDefined
-        val cookedOrdersBatch = cookedOrdersList.asScala.filterNot(cookedOrder => cookedOrder == Order.DUMMY_ORDER).toSeq
-        matchStrategy.matchCookedOrders(cookedOrdersBatch)
+        readyOrdersList.add(orderQueue.take())
+        orderQueue.drainTo(readyOrdersList)
+        isLastOrderReady = readyOrdersList.asScala.find(readyOrder => readyOrder == Order.DUMMY_ORDER).isDefined
+        val readyOrdersBatch = readyOrdersList.asScala.filterNot(readyOrder => readyOrder == Order.DUMMY_ORDER).toSeq
+        matchStrategy.matchReadyOrders(readyOrdersBatch)
       }
     }
 
-    isLastOrderCooked && hasLastCourierArrived
+    isLastOrderReady && hasLastCourierArrived
   }
 }

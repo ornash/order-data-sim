@@ -44,16 +44,12 @@ case class Courier(orderId: Option[String] = None,
    * @return actual duration in dispatch state between receipt of dispatch by courier and its arrival at CloudKitchen.
    *         Should be greater than or equal to transitDuration.
    */
-  def dispatchDuration(): Option[Duration] = {
-    durationInStatus(DISPATCHED)
-  }
+  def dispatchDuration(): Option[Duration] = { durationInStatus(DISPATCHED) }
 
   /**
    * @return duration spent waiting between arrival of courier and its match with an [[com.css.simulator.model.Order]]
    */
-  def waitDuration(): Option[Duration] = {
-    durationInStatus(ARRIVED)
-  }
+  def waitDuration(): Option[Duration] = { durationInStatus(ARRIVED) }
 
   private def durationInStatus(expectedStatusType: CourierStatusType): Option[Duration] = {
     currentStatus.findCourierStatus(expectedStatusType) match {
@@ -74,14 +70,14 @@ object Courier {
   }
 
   /**
-   * Makes a dispatched courier arrive at CloudKitchen.
+   * Makes a dispatched courier arrive at CloudKitchen. The arrival time is the time instant at which this method was invoked.
    */
   def arrived(dispatchedCourier: Courier): Try[Courier] = {
     dispatchedCourier.transform(ARRIVED)
   }
 
   /**
-   * Matches an arrived courier with the order it was dispatched for.
+   * Matches an arrived courier with the order it was dispatched for. The match time is the time instant at which this method was invoked.
    */
   def matched(arrivedCourier: Courier): Try[Courier] = {
     arrivedCourier.orderId match {
@@ -91,14 +87,14 @@ object Courier {
   }
 
   /**
-   * Matches an arrived courier with given order-id.
+   * Matches an arrived courier with given order-id. The match time is the time instant at which this method was invoked.
    */
   def matched(arrivedCourier: Courier, newOrderId: String): Try[Courier] = {
     arrivedCourier.copy(Some(newOrderId)).transform(MATCHED)
   }
 
   /**
-   * Delivers matched order.
+   * Delivers matched order. The delivery time is the time instant at which this method was invoked.
    */
   def deliver(matchedCourier: Courier): Try[Courier] = {
     matchedCourier.transform(HAS_DELIVERED)

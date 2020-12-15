@@ -2,45 +2,55 @@ package com.css.simulator.strategy
 
 import java.time.LocalDateTime
 
-import com.css.simulator.model.{Courier, Order}
-import com.typesafe.scalalogging.LazyLogging
+import com.css.simulator.model.{Courier, Order, OrderAndCourier}
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
+/**
+ * Match orders with couriers in FIFO order. This class is not thread-safe.
+ *
+ * FIFO :- A courier picks up the next available order upon arrival. If there are multiple orders available, pick up an
+ * arbitrary order. If there are no available orders, couriers wait for the next available one. When there are multiple
+ * couriers waiting, the next available order is assigned to the earliest arrived courier.
+ */
 case class FifoMatchStrategy() extends MatchStrategy {
-  implicit def dateTimeOrdering: Ordering[LocalDateTime] = Ordering.fromLessThan(_ isBefore _)
+  implicit def ascDateTimeOrdering: Ordering[LocalDateTime] = Ordering.ordered[LocalDateTime].reverse
 
-  private val cookedOrders = mutable.ArrayBuffer.empty[Order]
-  private val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalInstant().get)(dateTimeOrdering))
+  private val readyOrders = mutable.ArrayBuffer.empty[Order]
 
-  private def applyFifoMatchStrategy(): Unit = {
-    val cookedOrdersToBeRemoved = mutable.ArrayBuffer.empty[Order]
+  //PriorityQueue of Courier organized by their arrivalInstant() in ascending order.
+  private val arrivedCouriers = mutable.PriorityQueue()(Ordering.by[Courier, LocalDateTime](_.arrivalInstant().get)(ascDateTimeOrdering))
 
-    cookedOrders.foreach(cookedOrder => {
-      if(!arrivedCouriers.isEmpty) {
+  private def applyFifoMatchStrategy(): Seq[OrderAndCourier] = {
+    val readyOrdersToBeRemoved = mutable.ArrayBuffer.empty[Order]
+    val fifoMatches = mutable.ArrayBuffer.empty[OrderAndCourier]
+
+    readyOrders.foreach(readyOrder => {
+      if (!arrivedCouriers.isEmpty) {
+        //dequeue courier that arrived earliest and match it with this cooked/ready order.
         val arrivedCourier = arrivedCouriers.dequeue()
-        matchOrderWithCourier(cookedOrder, arrivedCourier) match {
+        matchOrderWithCourier(readyOrder, arrivedCourier) match {
           case Failure(exception) => throw exception
-          case Success(_) => cookedOrdersToBeRemoved.addOne(cookedOrder)
+          case Success(matchedOrderAndCourier) => {
+            fifoMatches.addOne(matchedOrderAndCourier)
+            readyOrdersToBeRemoved.addOne(readyOrder)
+          }
         }
       }
     })
 
-    cookedOrders.subtractAll(cookedOrdersToBeRemoved)
+    readyOrders.subtractAll(readyOrdersToBeRemoved)
+    fifoMatches.toSeq
   }
 
-  override def matchCookedOrders(cookedOrdersBatch: Seq[Order]): Unit = {
-    cookedOrdersBatch.foreach(cookedOrder => {
-      cookedOrders.addOne(cookedOrder)
-    })
+  override def matchReadyOrders(readyOrdersBatch: Seq[Order]): Seq[OrderAndCourier] = {
+    readyOrders.addAll(readyOrdersBatch)
     applyFifoMatchStrategy()
   }
 
-  override def matchArrivedCouriers(arrivedCouriersBatch: Seq[Courier]): Unit = {
-    arrivedCouriersBatch.foreach(arrivedCourier => {
-      arrivedCouriers.addOne(arrivedCourier)
-    })
+  override def matchArrivedCouriers(arrivedCouriersBatch: Seq[Courier]): Seq[OrderAndCourier] = {
+    arrivedCouriers.enqueue(arrivedCouriersBatch : _*)
     applyFifoMatchStrategy()
   }
 }

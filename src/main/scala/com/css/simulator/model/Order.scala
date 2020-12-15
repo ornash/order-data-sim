@@ -32,23 +32,17 @@ case class Order(id: String,
   /**
    * @return duration spent in received state before starting to cook the order
    */
-  def schedulerDelayDuration(): Option[Duration] = {
-    durationInStatus(RECEIVED)
-  }
+  def schedulerDelayDuration(): Option[Duration] = { durationInStatus(RECEIVED) }
 
   /**
    * @return duration spent in cooking the order. Should be greater than or equal to prepDuration.
    */
-  def cookDuration(): Option[Duration] = {
-    durationInStatus(COOKING)
-  }
+  def cookDuration(): Option[Duration] = { durationInStatus(COOKING) }
 
   /**
    * @return duration spent waiting after an order is cooked/ready until its match with a [[com.css.simulator.model.Courier]]
    */
-  def waitDuration(): Option[Duration] = {
-    durationInStatus(READY)
-  }
+  def waitDuration(): Option[Duration] = { durationInStatus(READY) }
 
   private def durationInStatus(expectedStatusType: OrderStatusType): Option[Duration] = {
     currentStatus.findOrderStatus(expectedStatusType) match {
@@ -60,39 +54,39 @@ case class Order(id: String,
 
 object Order {
   private val dummy = "dummy"
-  val DUMMY_ORDER = newOrder(dummy,dummy, 0)
+  val DUMMY_ORDER = newOrder(dummy,dummy, Duration.ZERO)
 
   def fromOrderNotification(orderNotification: OrderNotification): Order = {
-    newOrder(orderNotification.id, orderNotification.name, orderNotification.prepTime)
+    newOrder(orderNotification.id, orderNotification.name, Duration.ofSeconds(orderNotification.prepTime))
   }
 
-  def newOrder(id: String, name: String = "", prepTimeInSeconds: Int): Order = {
-    Order(id, name, Duration.ofSeconds(prepTimeInSeconds), OrderStatus(RECEIVED))
+  def newOrder(id: String, name: String = "", prepDuration: Duration): Order = {
+    Order(id, name, prepDuration, OrderStatus(RECEIVED))
   }
 
   /**
-   * Starts cooking a received order.
+   * Starts cooking a received order. The cooking start time is the time instant at which this method was invoked.
    */
   def startCooking(receivedOrder: Order): Try[Order] = {
     receivedOrder.transform(COOKING)
   }
 
   /**
-   * Makes a cooking order ready/cooked for pickup.
+   * Makes a cooking order ready/cooked for pickup. The ready start time is the time instant at which this method was invoked.
    */
   def readyForPickup(cookingOrder: Order): Try[Order] = {
     cookingOrder.transform(READY)
   }
 
   /**
-   * Picks up a ready/cooked order for delivery.
+   * Picks up a ready/cooked order for delivery. The pickup time is the time instant at which this method was invoked.
    */
   def pickup(readyOrder: Order): Try[Order] = {
     readyOrder.transform(PICKED_UP)
   }
 
   /**
-   * Delivers picked up order.
+   * Delivers picked up order. The delivery time is the time instant at which this method was invoked.
    */
   def deliver(pickedOrder: Order): Try[Order] = {
     pickedOrder.transform(DELIVERED)

@@ -44,13 +44,13 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
   }
 
   def dispatchCourier(orderNotification: OrderNotification): Future[Try[Courier]] = {
-    val orderNotificationId = simulatorConfig.matchStrategy match {
+    val orderId = simulatorConfig.matchStrategy match {
       case FifoMatchStrategy() => None
       case OrderIdMatchStrategy() => Some(orderNotification.id)
       case x => throw SimulatorException(s"Courier dispatch is not supported for: $x")
     }
 
-    val dispatchedCourier = Courier.dispatchNewCourier(orderNotificationId, transitDuration = Duration.ofSeconds(Random.between(3, 16)))
+    val dispatchedCourier = Courier.dispatchNewCourier(orderId, transitDuration = Duration.ofSeconds(Random.between(3, 16)))
     val arrivalDelayInSeconds = dispatchedCourier.transitDuration.getSeconds
 
     val couriersPromise = courierDispatchScheduler.scheduleTaskWithDelay(() => courierArrived(dispatchedCourier), arrivalDelayInSeconds)
