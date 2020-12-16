@@ -16,6 +16,12 @@ Things Learnt
 						   -ignore (avg(order-wait-duration) * arrivalSpeed) + (avg(courier-wait-duration) * arrivalSpeed)
 	- ideal-thread-count = Min(ideal-thread-count, (totalOrders * 2) + 1)
 
+To Write
+	- I know CourierStatus and OrderStatus are similar but keep them separate with some redundant code for clarity.	
+	- MatchInstant and DeliveryInstant APIs can be added but not adding to keep interface simple
+	- Explain stats
+	- FIFO is better with low arrival speed, OrderId is better for high arrival speed.
+
 [13:06:49.443] - Order receipt Stats:                   ThreadCount= 32, ArrivalSpeed=2, Total=132, Avg=4153, Median=3929, Max=9807, Min=0
 [13:06:49.445] - Expected order prep Stats:             ThreadCount= 32, ArrivalSpeed=2, Total=132, Avg=8946, Median=9000, Max=15000, Min=3000
 [13:06:49.446] - Order cooking Stats:                   ThreadCount= 32, ArrivalSpeed=2, Total=132, Avg=8950, Median=9002, Max=15006, Min=3000

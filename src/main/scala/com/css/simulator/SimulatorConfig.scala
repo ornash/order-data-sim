@@ -25,8 +25,8 @@ object SimulatorConfig {
   val COURIER_DISPATCH_THREAD_COUNT = PROCESSOR_COUNT / 2
   val MIN_DISPATCH_DELAY = 3
   val MAX_DISPATCH_DELAY = 15
-  val DEFAULT_FILE = "./dispatch_orders.json"
-  val DEFAULT_SPEED = 2
+  val DEFAULT_FILE = "./dispatch_orders_1m.json"
+  val DEFAULT_SPEED = 100000
 
   def defaultSimulatorConfig(): SimulatorConfig = {
     val threadCounts = (ORDER_PROCESSOR_THREAD_COUNT, COURIER_DISPATCH_THREAD_COUNT)
@@ -35,7 +35,7 @@ object SimulatorConfig {
   }
 
   def readSimulatorConfig(): SimulatorConfig = {
-    var inputLine = readLine(s"Enter orders input file [$DEFAULT_FILE]: ")
+    var inputLine = readLine(s"Enter orders input file path [$DEFAULT_FILE]: ")
     val ordersFilePath = if (inputLine.isEmpty) s"$DEFAULT_FILE" else inputLine
 
     inputLine = readLine(s"Enter order receipt speed per second [$DEFAULT_SPEED]: ")

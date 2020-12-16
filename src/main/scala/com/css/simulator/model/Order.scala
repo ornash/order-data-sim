@@ -32,7 +32,7 @@ case class Order(id: String,
   /**
    * @return duration spent in received state before starting to cook the order
    */
-  def schedulerDelayDuration(): Option[Duration] = { durationInStatus(RECEIVED) }
+  def preCookDelayDuration(): Option[Duration] = { durationInStatus(RECEIVED) }
 
   /**
    * @return duration spent in cooking the order. Should be greater than or equal to prepDuration.

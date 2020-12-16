@@ -25,7 +25,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
   private val courierDispatchScheduler = DelayedTaskScheduler(simulatorConfig.courierDispatchThreads)
   private val orderScheduler = DelayedTaskScheduler(simulatorConfig.orderWorkerThreads)
   private val minDispatchDelay = simulatorConfig.minDispatchDelay
-  private val maxDispatchDelayExclusive = simulatorConfig.maxDispatchDelay
+  private val maxDispatchDelayExclusive = simulatorConfig.maxDispatchDelay + 1
 
   /**
    * Starts cooking the order based on orderNotification and returns a [[scala.concurrent.Future]] that will complete
@@ -46,7 +46,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
   }
 
   //make the order ready and post it on the orderQueue
-  protected def makeOrderReady(cookingOrder: Order): Try[Order] = Try {
+  private def makeOrderReady(cookingOrder: Order): Try[Order] = Try {
     Order.readyForPickup(cookingOrder) match {
       case Failure(ex) => throw SimulatorException(s"Failed to make order ready for pickup: $cookingOrder", ex)
       case Success(readyOrder) => {
@@ -77,7 +77,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
     couriersPromise.future
   }
 
-  protected def courierArrived(dispatchedCourier: Courier): Try[Courier] = Try {
+  private def courierArrived(dispatchedCourier: Courier): Try[Courier] = Try {
     Courier.arrived(dispatchedCourier) match {
       case Failure(ex) => throw SimulatorException(s"Courier failed to arrive: $dispatchedCourier", ex)
       case Success(arrivedCourier) => {

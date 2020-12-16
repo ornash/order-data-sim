@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object DispatchSimulator extends App with LazyLogging {
@@ -39,7 +39,7 @@ object DispatchSimulator extends App with LazyLogging {
   }
   val endTime = LocalDateTime.now()
   val simulationDuration = java.time.Duration.between(startTime, endTime)
-  logger.info(s"StartTime = $startTime, EndTime = $endTime, Total SimulationDuration = $simulationDuration}")
+  logger.info(s"StartTime = $startTime, EndTime = $endTime, Total SimulationDuration = $simulationDuration")
   System.exit(0)
 
   def performSimulation(allOrderNotifications: Seq[OrderNotification]): Unit = {
@@ -60,15 +60,18 @@ object DispatchSimulator extends App with LazyLogging {
 
       Await.result(readyOrdersProcessor, Duration.Inf)
 
-      MatchStrategyStats.printAllMatches(matchStrategy)
-      logger.info(s"Results using match strategy: $matchStrategy")
-      logger.info(s"Order receipt speed: ${simulatorConfig.orderReceiptSpeed}")
-      logger.info(s"Cooking thread count: ${simulatorConfig.orderWorkerThreads}")
-      logger.info(s"Courier dispatch thread count: ${simulatorConfig.orderWorkerThreads}")
+      val matchStrategyStats = MatchStrategyStats(matchStrategy)
+      matchStrategyStats.printAllMatches()
+      logger.info(s"Results for processing orders file: ${simulatorConfig.ordersFilePath}")
+      logger.info(s"Worker thread count for processing orders: ${simulatorConfig.orderWorkerThreads}")
+      logger.info(s"worker thread count for dispatching couriers: ${simulatorConfig.courierDispatchThreads}")
 
       logger.info(s"Sizes: receivedOrders=${allOrders.size}, failedOrders=${failedOrders.size}, matchedOrders=${matchStrategy.getMatchedOrders.size}")
       logger.info(s"Sizes: dispatchedCouriers=${allCouriers.size}, failedCouriers=${failedCouriers.size}, matchedCouriers=${matchStrategy.getMatchedCouriers.size}")
-      MatchStrategyStats.printStats(matchStrategy)
+      logger.info("")
+      logger.info(s"Simulation order receipt speed: ${simulatorConfig.orderReceiptSpeed} per second")
+      matchStrategyStats.printStats()
+      logger.info("Simulation complete.")
     } catch {
       case ex: Exception => logger.error("Simulation failed: ", ex)
     }
@@ -79,12 +82,15 @@ object DispatchSimulator extends App with LazyLogging {
       if(times == 0) {
         notifications
       } else {
-        val duplicateNotifications =  notifications.map(orderNotification => orderNotification.copy(id = s"${orderNotification.id}_$times"))
+        val duplicateNotifications =  notifications.map(orderNotification => orderNotification.copy(id = s"${orderNotification.id}_$times", prepTime = Random.between(3,16)))
         duplicateOrderNotifications(notifications ++ duplicateNotifications, times - 1)
       }
     }
 
-    duplicateOrderNotifications(allOrderNotifications, 1).sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
+    val repeatCount = 0
+    val duplicatedOrderNotifications = duplicateOrderNotifications(allOrderNotifications, repeatCount)
+    //OrderNotificationReader.attemptWriteOrdersFile(s"./dispatch_orders_${repeatCount}.json", duplicatedOrderNotifications)
+    duplicatedOrderNotifications.sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
       logger.info(s"Received new batch of ${orderBatch.size} orders.")
 
       val promisedOrdersAndCouriers = orderBatch.map(orderNotification => {

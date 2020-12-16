@@ -2,47 +2,59 @@ package com.css.simulator.strategy
 
 import com.typesafe.scalalogging.LazyLogging
 
-object MatchStrategyStats extends LazyLogging {
+/**
+ * Statistics printer for given MatchStrategy of simulation.
+ */
+case class MatchStrategyStats(matchStrategy: MatchStrategy) extends LazyLogging {
+  private val matchedOrders = matchStrategy.getMatchedOrders()
+  private val matchedCouriers = matchStrategy.getMatchedCouriers()
+  private val expectedPrepDurationStats = DurationStats(matchedOrders.map(_.prepDuration))
+  private val actualPrepDurationStats = DurationStats(matchedOrders.map(_.cookDuration().get))
+  private val orderWaitDurationStats = DurationStats(matchedOrders.map(_.waitDuration().get))
 
-  def printAllMatches(matchStrategy: MatchStrategy): Unit = {
+  private val expectedTransitDurationStats = DurationStats(matchedCouriers.map(_.transitDuration))
+  private val actualTransitDurationStats = DurationStats(matchedCouriers.map(_.dispatchDuration().get))
+  private val courierWaitDurationStats = DurationStats(matchedCouriers.map(_.waitDuration().get))
+
+  def printAllMatches(): Unit = {
     logger.whenDebugEnabled({
       matchStrategy.getMatchedOrderAndCouriers().foreach(orderAndCourier => logger.debug(s"Match = $orderAndCourier"))
     })
   }
 
-  def printStats(matchStrategy: MatchStrategy): Unit = {
-    printStats("Order Receipt", matchStrategy.getMatchedOrders.map(_.schedulerDelayDuration().get))
-    printStats("Expected Order Prep", matchStrategy.getMatchedOrders.map(_.prepDuration))
-    printStats("Order Cooking", matchStrategy.getMatchedOrders.map(_.cookDuration().get))
-    printStats("Order Wait", matchStrategy.getMatchedOrders.map(_.waitDuration().get))
-
+  def printStats(): Unit = {
+    logger.info(s"Simulation stats for order-courier match strategy: $matchStrategy")
+    logger.info(s"Expected order prepDuration stats:      $expectedPrepDurationStats")
+    logger.info(s"Actual order prepDuration stats:        $actualPrepDurationStats")
+    logger.info(s"Order match waitDuration stats:         $orderWaitDurationStats")
     logger.info("")
-
-    printStats("Expected Courier ArrivalDelay", matchStrategy.getMatchedCouriers.map(_.transitDuration))
-    printStats("Courier Dispatch", matchStrategy.getMatchedCouriers.map(_.dispatchDuration().get))
-    printStats("Courier Wait", matchStrategy.getMatchedCouriers.map(_.waitDuration().get))
+    logger.info(s"Expected courier transitDuration stats: $expectedTransitDurationStats")
+    logger.info(s"Actual courier transitDuration stats:   $actualTransitDurationStats")
+    logger.info(s"Courier match waitDuration stats:       $courierWaitDurationStats")
   }
 
-  //TODO: write this to a csv for analysis
-  def printStats(of: String, durations: Seq[java.time.Duration]): Unit = {
+  private case class DurationStats(durations: Seq[java.time.Duration]) {
     val total = durations.size
-    val avgMs = if(total != 0) durations.map(_.toMillis).foldLeft(0L)(_ + _) / total else total
-    val maxMs = durations.map(_.toMillis).maxOption.getOrElse(0)
-    val minMs = durations.map(_.toMillis).minOption.getOrElse(0)
-    val medianMs = if(durations.nonEmpty) medianCalculator(durations.map(_.toMillis)) else 0
-    val indentString = " " * (30 - of.length)
-    logger.info(s"$of Stats: $indentString Total=$total, Avg=$avgMs, Median=$medianMs, Max=$maxMs, Min=$minMs")
-  }
+    val durationsInMilli = if (total != 0) durations.map(_.toMillis) else Seq.empty[Long]
+    val avgMs = if (total != 0) durationsInMilli.foldLeft(0L)(_ + _) / total else 0
+    val maxMs = durationsInMilli.maxOption.getOrElse(0)
+    val minMs = durationsInMilli.minOption.getOrElse(0)
+    val medianMs = if (durationsInMilli.nonEmpty) median(durationsInMilli) else 0
 
-  def medianCalculator(seq: Seq[Long]): Long = {
-    //In order if you are not sure that 'seq' is sorted
-    val sortedSeq = seq.sortWith(_ < _)
+    override def toString: String = {
+      s"Total=$total, Avg=${avgMs}ms, Median=${medianMs}ms, Max=${maxMs}ms, Min=${minMs}ms"
+    }
 
-    if (seq.size % 2 == 1) {
-      sortedSeq(sortedSeq.size / 2)
-    } else {
-      val (up, down) = sortedSeq.splitAt(seq.size / 2)
-      (up.last + down.head) / 2
+    private def median(seq: Seq[Long]): Long = {
+      val sortedSeq = seq.sortWith(_ < _)
+      val midIndex = sortedSeq.size / 2
+      val median = sortedSeq(midIndex)
+      if (sortedSeq.size % 2 == 0) {
+        (sortedSeq(midIndex - 1) + median) / 2
+      } else {
+        median
+      }
     }
   }
+
 }

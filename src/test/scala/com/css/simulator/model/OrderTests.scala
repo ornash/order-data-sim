@@ -26,7 +26,7 @@ class OrderTests extends AnyFunSuite {
     val newOrder = Order.newOrder(ID, NAME, PREP_DURATION)
     assertResult(ID)(newOrder.id)
     assertResult(NAME)(newOrder.name)
-    assertResult(PREP_DURATION)(newOrder.prepDuration.getSeconds)
+    assertResult(PREP_DURATION)(newOrder.prepDuration)
     assertResult(RECEIVED)(newOrder.currentStatus.statusType)
   }
 
@@ -76,14 +76,14 @@ class OrderTests extends AnyFunSuite {
   }
 
   test("Duration unavailable") {
-    assert(NEW_ORDER.schedulerDelayDuration().isEmpty)
+    assert(NEW_ORDER.preCookDelayDuration().isEmpty)
   }
 
   test("Scheduler delay duration") {
     val newOrder = Order.newOrder(ID, NAME, PREP_DURATION)
     Thread.sleep(SLEEP_DURATION.toMillis)
     val cookingOrder = transformOrder(newOrder, COOKING)
-    assert(cookingOrder.schedulerDelayDuration().get.compareTo(SLEEP_DURATION) >= 0)
+    assert(cookingOrder.preCookDelayDuration().get.compareTo(SLEEP_DURATION) >= 0)
   }
 
   test("Cook duration") {
