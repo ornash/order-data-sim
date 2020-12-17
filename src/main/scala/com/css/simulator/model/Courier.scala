@@ -88,9 +88,19 @@ object Courier {
 
   /**
    * Matches an arrived courier with given order-id. The match time is the time instant at which this method was invoked.
+   * The match will fail if given order-id doesnt match the expected order-id this courier was dispatched for.
    */
   def matched(arrivedCourier: Courier, newOrderId: String): Try[Courier] = {
-    arrivedCourier.copy(Some(newOrderId)).transform(MATCHED)
+    arrivedCourier.orderId match {
+      case Some(expectedOrderId) => {
+        if(expectedOrderId.equals(newOrderId)) {
+          arrivedCourier.transform(MATCHED)
+        } else {
+          Failure(SimulatorException(s"newOrderId: $newOrderId doesn't match expected orderId for courier $arrivedCourier"))
+        }
+      }
+      case None => arrivedCourier.copy(Some(newOrderId)).transform(MATCHED)
+    }
   }
 
   /**

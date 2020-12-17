@@ -6,21 +6,17 @@ import com.css.simulator.exception.SimulatorException
 import com.css.simulator.model.OrderNotification
 import com.typesafe.scalalogging.LazyLogging
 import upickle.default._
-import ujson.Arr
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
-
 
 object OrderNotificationReader extends LazyLogging {
 
   def attemptReadOrdersFile(filePath: Path): Try[Seq[OrderNotification]] = {
     try {
 
-      logger.info(s"Reading orders json file at: $filePath")
+      logger.info(s"Reading orders json file at: ${filePath.toAbsolute.path}")
 
       val jsonFile = Source.fromFile(filePath.toAbsolute.path, "utf-8")
       val jsonContent = try { jsonFile.getLines.mkString } finally { jsonFile.close() }
