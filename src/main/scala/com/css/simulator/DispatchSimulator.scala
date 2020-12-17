@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object DispatchSimulator extends App with LazyLogging {
@@ -77,20 +77,12 @@ object DispatchSimulator extends App with LazyLogging {
     }
   }
 
+  /**
+   * Simulates order flow based on provided allOrderNotifications by sending a batch of notifications per second.
+   * The speed is determined by orderReceiptSpeed. Returns Future Order and Courier objects for all notifications.
+   */
   def simulateOrderFlow(allOrderNotifications: Seq[OrderNotification]): (Seq[Future[Try[Order]]], Seq[Future[Try[Courier]]]) = {
-    def duplicateOrderNotifications(notifications: Seq[OrderNotification], times: Int) : Seq[OrderNotification] = {
-      if(times == 0) {
-        notifications
-      } else {
-        val duplicateNotifications =  notifications.map(orderNotification => orderNotification.copy(id = s"${orderNotification.id}_$times", prepTime = Random.between(3,16)))
-        duplicateOrderNotifications(notifications ++ duplicateNotifications, times - 1)
-      }
-    }
-
-    val repeatCount = 0
-    val duplicatedOrderNotifications = duplicateOrderNotifications(allOrderNotifications, repeatCount)
-    //OrderNotificationReader.attemptWriteOrdersFile(s"./dispatch_orders_${repeatCount}.json", duplicatedOrderNotifications)
-    duplicatedOrderNotifications.sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
+    allOrderNotifications.sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
       logger.info(s"Received new batch of ${orderBatch.size} orders.")
 
       val promisedOrdersAndCouriers = orderBatch.map(orderNotification => {
