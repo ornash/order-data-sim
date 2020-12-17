@@ -53,7 +53,9 @@ trait MatchStrategy extends LazyLogging {
 
           case Success(matchedCourier) => {
             val matchedOrderAndCourier = OrderAndCourier(pickupOrder, matchedCourier)
-            logger.debug(s"Matched order-id: ${pickupOrder.id} with courier.")
+            logger.debug(s"Matched order-id: ${pickupOrder.id}, order wait duration: ${pickupOrder.waitDuration().get.toMillis}ms")
+            logger.debug(s"Matched order-id: ${pickupOrder.id}, courier wait duration: ${matchedCourier.waitDuration().get.toMillis}ms")
+
             matchedOrderAndCouriers.addOne(matchedOrderAndCourier)
             matchedOrderAndCourier
           }

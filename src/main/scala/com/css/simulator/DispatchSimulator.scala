@@ -64,7 +64,6 @@ object DispatchSimulator extends App with LazyLogging {
       Await.result(readyOrdersProcessor, Duration.Inf)
 
       val matchStrategyStats = MatchStrategyStats(matchStrategy)
-      matchStrategyStats.printAllMatches()
       logger.info("")
       logger.info(s"Results for processing orders file: ${simulatorConfig.ordersFilePath}")
       logger.info(s"Worker thread count for processing orders: ${simulatorConfig.orderWorkerThreads}")

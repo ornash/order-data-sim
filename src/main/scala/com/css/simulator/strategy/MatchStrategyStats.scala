@@ -16,12 +16,6 @@ case class MatchStrategyStats(matchStrategy: MatchStrategy) extends LazyLogging 
   private val actualTransitDurationStats = DurationStats(matchedCouriers.map(_.dispatchDuration().get))
   private val courierWaitDurationStats = DurationStats(matchedCouriers.map(_.waitDuration().get))
 
-  def printAllMatches(): Unit = {
-    logger.whenDebugEnabled({
-      matchStrategy.getMatchedOrderAndCouriers().foreach(orderAndCourier => logger.debug(s"Match = $orderAndCourier"))
-    })
-  }
-
   def printStats(): Unit = {
     logger.info(s"Simulation stats for order-courier match strategy: $matchStrategy")
     logger.info(s"Expected order prepDuration stats:      $expectedPrepDurationStats")
