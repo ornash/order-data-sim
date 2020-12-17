@@ -5,39 +5,70 @@
 This project is written in Scala, it can be executed using following options:
 ### sbt
 1. Installing SBT on MacOS
+
 `brew install sbt`
+
 2. Execution
+
 `sbt`
-      #sbt
-      #sbt -J-Xmx8G --to increase memory for large simulation
-      #sbt:order-data-sim> compile
-      #sbt:order-data-sim> test
-      #sbt:order-data-sim> run 
-      #sbt:order-data-sim> runMain com.css.simulator.DispatchSimulator
-      - tests
-      - run - memmory
+
+For larger simulations:
+
+`sbt -J-Xmx8G` 
+
+Use following commands on the sbt prompt.
+
+2.1. Compilation
+`compile`
+2.2. Test
+`test`
+2.3. Run Simulation
+`run` or `runMain com.css.simulator.DispatchSimulator`
+
 ### IntelliJ IDEA
-      - import as new project
-         - setup scala sdk
-         - intellij will detect it as a sbt project and build it
-      - tests - individual or entire suite in package
-      - run - com.css.simulator.DispatchSimulator application
-      - run - ~run as sbt-task
-      - memory - -Xmx8G in JVM options of configuration
-   - logging config
-      - debug and info
-      - use info when trying a large simulation because too many logs are printed and consume resources and affect performance
-2. Meaning of terms
-   - simulator config explanation
-   - output explanation
+1. Import this directory as a new project.
+2. Setup Scala SDK
+3. IntelliJ will detect it as an sbt project and build it automatically.
+3.1. Tests - Individual test suite or entire package.
+3.2. Run - Open class com.css.simulator.DispatchSimulator, since it is an "App" it can directly be executed as a main class.
+
+Note: Increase memory in DispatchSimulator application configuration for larger simulations.
+
+### Log Configuration
+Log configuration XML is located at "./src/main/resources/logback.xml" in this directory.
+Default log level is set to "debug"
+Use "info" log level for trying out larger simulations. Too many logs are printed at debug level which consume resources and affect performance.
+
+## Terms Used
+### DispatchSimulator Input Config
+DispatchSimulator prompt will ask for the following configurations:
+1. Orders input file
+This file is expected to be a json of array of order notifications. The default is `./dispatch_orders.json`.
+2. Order receipt speed per second
+Orders arrival speed can be simulated with this config. The default is 2.
+3. Worker thread count for processing orders
+Orders are processed in a thread pool. The default is good enough even for larger simulations but you can tweak this parameter for experimentation. The default count is half of your machines total number of processors.
+4. Worker thread count for dispatching couriers
+Courier dispatches are processed in a separate thread pool. The default is good enough even for larger simulations but you can tweak this parameter for experimentation. The default count is half of your machines total number of processors.
+5. Minimum delay(in seconds) for courier dispatch
+This is the minimum amount of time a courier can take to arrive at CloudKitchen. The default is 3.
+6. Maximum delay(in seconds) for courier dispatch
+This is the maximum amount of time a courier can take to arrive at CloudKitchen. The default is 15. Simulation will use a random number between these min and max durations.
+7. Match Strategy
+This is strategy that will be used to match ready orders with arrived couriers. The default is 1 (FIFO)
+"1" -> FIFO match i.e. couriers will be assigned cooked orders in the order they arrive at CloudKitchen.
+"2" -> Order-Id based match i.e. couriers will be dispatched for specific order-id and they will pickup only those order-ids. 
+
+### DispatchSimulator Output
    - when to configure thread count
-3. My approach
+
+### Approach
    - model explanation
    - CloudKitcheen and thread pool explanation
    - Matcher and strategy explanation
      - why it isnt multithreaded
    - not doing x because
-4. Conclusion
+### Conclusion
    - which one is better
 
 
