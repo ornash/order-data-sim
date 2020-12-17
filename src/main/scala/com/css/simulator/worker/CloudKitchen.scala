@@ -52,7 +52,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
       case Success(readyOrder) => {
         //blocking operation
         orderQueue.put(readyOrder)
-        logger.info(s"Chef cooked order: $readyOrder")
+        logger.debug(s"Chef cooked order: $readyOrder")
         readyOrder
       }
     }
@@ -83,7 +83,7 @@ case class CloudKitchen(simulatorConfig: SimulatorConfig, orderQueue: LinkedBloc
       case Success(arrivedCourier) => {
         //blocking operation
         courierQueue.put(arrivedCourier)
-        logger.info(s"Courier has arrived: $arrivedCourier")
+        logger.debug(s"Courier has arrived: $arrivedCourier")
         arrivedCourier
       }
     }

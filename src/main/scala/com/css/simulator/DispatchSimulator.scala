@@ -47,10 +47,12 @@ object DispatchSimulator extends App with LazyLogging {
       val readyOrdersProcessor = matcher.startMatchProcessing()
       val allOrdersAndCouriers = simulateOrderFlow(allOrderNotifications)
 
+      logger.info("Waiting for all orders to be ready.")
       val allOrders = allOrdersAndCouriers._1
       val failedOrders = Await.result(Future.sequence(allOrders), Duration.Inf).filter(_.isFailure)
       failedOrders.foreach(failedOrder => logger.error("Failed to cook order: ", failedOrder.failed.get))
 
+      logger.info("Waiting for all couriers to be arrive.")
       val allCouriers = allOrdersAndCouriers._2
       val failedCouriers = Await.result(Future.sequence(allCouriers), Duration.Inf).filter(_.isFailure)
       failedCouriers.foreach(failedCourier => logger.error("Failed to dispatch courier: ", failedCourier.failed.get))
@@ -58,10 +60,12 @@ object DispatchSimulator extends App with LazyLogging {
       orderQueue.put(Order.DUMMY_ORDER)
       courierQueue.put(Courier.DUMMY_COURIER)
 
+      logger.info("Waiting for all order-courier matches to complete.")
       Await.result(readyOrdersProcessor, Duration.Inf)
 
       val matchStrategyStats = MatchStrategyStats(matchStrategy)
       matchStrategyStats.printAllMatches()
+      logger.info("")
       logger.info(s"Results for processing orders file: ${simulatorConfig.ordersFilePath}")
       logger.info(s"Worker thread count for processing orders: ${simulatorConfig.orderWorkerThreads}")
       logger.info(s"worker thread count for dispatching couriers: ${simulatorConfig.courierDispatchThreads}")
@@ -82,13 +86,15 @@ object DispatchSimulator extends App with LazyLogging {
    * The speed is determined by orderReceiptSpeed. Returns Future Order and Courier objects for all notifications.
    */
   def simulateOrderFlow(allOrderNotifications: Seq[OrderNotification]): (Seq[Future[Try[Order]]], Seq[Future[Try[Courier]]]) = {
+    logger.info("Starting order flow simulation.")
+
     allOrderNotifications.sliding(orderReceiptSpeed, orderReceiptSpeed).flatMap(orderBatch => {
       logger.info(s"Received new batch of ${orderBatch.size} orders.")
 
       val promisedOrdersAndCouriers = orderBatch.map(orderNotification => {
         val promisedOrder = cloudKitchen.cookOrder(orderNotification)
         val promisedCourier = cloudKitchen.dispatchCourier(orderNotification)
-        logger.info(s"Dispatched courier and started cooking order for $orderNotification")
+        logger.debug(s"Dispatched courier and started cooking order for $orderNotification")
 
         Tuple2(promisedOrder, promisedCourier)
       })
